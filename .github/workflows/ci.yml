@@ -55,6 +55,18 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq nasm
       - name: Check out asmpython beta/3.14.0
         run: git clone --depth 1 --branch beta/3.14.0 https://github.com/deltathedumb/asmpython.git ../asmpython
+      - name: Audit whole-program import graph
+        id: import_audit
+        continue-on-error: true
+        env:
+          PYTHONPATH: ${{ github.workspace }}/../asmpython:${{ github.workspace }}
+        run: |
+          python -m asmpython._compiler.import_audit \
+            tests/parity/model_snapshot.py \
+            > asmpython-import-audit.txt 2>&1
+      - name: Show import-graph diagnostic
+        if: always()
+        run: cat asmpython-import-audit.txt
       - name: Run CPython/asmpython differential probe
         id: parity
         continue-on-error: true
@@ -66,19 +78,21 @@ jobs:
       - name: Show differential diagnostic
         if: always()
         run: cat asmpython-parity.txt
-      - name: Upload differential diagnostic
+      - name: Upload compiler diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: asmpython-foundation-parity
-          path: asmpython-parity.txt
+          name: asmpython-foundation-diagnostics
+          path: |
+            asmpython-import-audit.txt
+            asmpython-parity.txt
           if-no-files-found: error
           retention-days: 7
       - name: Record current compatibility status
         if: always()
         run: |
-          if [ "${{ steps.parity.outcome }}" = "success" ]; then
+          if [ "${{ steps.import_audit.outcome }}" = "success" ] && [ "${{ steps.parity.outcome }}" = "success" ]; then
             echo "asmpython parity passed"
           else
-            echo "asmpython parity currently has a documented compiler/runtime gap"
+            echo "asmpython currently has a documented compiler/runtime gap"
           fi
