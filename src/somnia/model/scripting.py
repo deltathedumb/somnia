@@ -13,17 +13,28 @@ class PythonScript(Folder):
     source_path = Property("", value_type=str, category="Script")
     source = Property("", value_type=str, category="Script")
     auto_run = Property(True, value_type=bool, category="Script")
-    execution_context = Property("runtime", value_type=str, category="Script")
+    execution_context = Property("shared", value_type=str, category="Script")
     isolated_globals = Property(True, value_type=bool, category="Script")
 
     def __init__(self, object_id=None, name=None):
         super().__init__(object_id=object_id, name=name or "PythonScript")
 
     def validate_script(self):
-        if self.execution_context not in ("runtime", "editor", "shared"):
+        if self.execution_context not in (
+            "server",
+            "client",
+            "shared",
+            "editor",
+            "runtime",
+        ):
             raise ValueError("unsupported script execution context: " + self.execution_context)
         if not self.source and not self.source_path:
             raise ValueError("PythonScript requires source or source_path")
+
+    def runs_in_realm(self, realm):
+        if self.execution_context in ("shared", "runtime"):
+            return realm in ("server", "client", "runtime")
+        return self.execution_context == realm
 
 
 @register_object_class("somnia.PortaPyRuntime")
@@ -59,7 +70,11 @@ class PortaPyRuntime(NativeLibrary):
         self._runtime_handle = None
 
     def scripts(self):
-        return [child for child in self.children if isinstance(child, PythonScript)]
+        return [
+            obj
+            for obj in self.walk(include_self=False)
+            if isinstance(obj, PythonScript)
+        ]
 
     def sandbox_policy(self):
         return {
@@ -85,13 +100,21 @@ class PortaPyRuntime(NativeLibrary):
 
 @register_object_class("somnia.ScriptService")
 class ScriptService(Service):
-    """Owns embedded runtimes and scripts inside the live DataModel."""
+    """Deprecated general script container retained for model compatibility.
+
+    New projects place scripts under ServerScriptProvider or
+    PlayerScriptProvider and may place PortaPyRuntime objects beneath either.
+    """
 
     def __init__(self, object_id=None, name=None):
         super().__init__(object_id=object_id, name=name or "Scripts")
 
     def runtimes(self):
-        return [child for child in self.children if isinstance(child, PortaPyRuntime)]
+        return [
+            obj
+            for obj in self.walk(include_self=False)
+            if isinstance(obj, PortaPyRuntime)
+        ]
 
     def default_runtime(self):
         runtimes = self.runtimes()
@@ -105,6 +128,6 @@ class ScriptService(Service):
         result = []
         for runtime in self.runtimes():
             for script in runtime.scripts():
-                if context is None or script.execution_context in (context, "shared"):
+                if context is None or script.runs_in_realm(context):
                     result.append(script)
         return result
