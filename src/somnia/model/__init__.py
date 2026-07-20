@@ -1,4 +1,4 @@
-"""Unified Somnia object hierarchy and reflection API."""
+"""Unified Somnia object hierarchy, providers, and reflection API."""
 
 from .core import (
     DataModel,
@@ -17,17 +17,50 @@ from .core import (
     serialize_value,
 )
 from .document import ModelDocument
+from .provider import Game, Provider, RuntimeRealm
 
 # Import built-in object classes for registration side effects.
 from .native import NativeFunction, NativeLibrary, NativeLibraryService
-from .scene import Camera, Light, MeshObject, RenderService, World
+from .scene import Camera, Environment, Light, MeshObject, RenderService, Scene, World
 from .scripting import PortaPyRuntime, PythonScript, ScriptService
+from .providers import (
+    AnimationProvider,
+    Assets,
+    AudioProvider,
+    ClientStorage,
+    HttpProvider,
+    InputProvider,
+    LocalizationProvider,
+    NavigationProvider,
+    NetworkProvider,
+    PhysicsProvider,
+    PlayerProvider,
+    PlayerScriptProvider,
+    PlayerUIProvider,
+    ServerScriptProvider,
+    ServerStorage,
+    SharedStorage,
+    TimeProvider,
+    canonical_provider_types,
+    get_provider,
+    install_canonical_providers,
+    resolve_provider_type,
+)
 
 __all__ = [
+    "AnimationProvider",
+    "Assets",
+    "AudioProvider",
     "Camera",
+    "ClientStorage",
     "DataModel",
+    "Environment",
     "Folder",
+    "Game",
+    "HttpProvider",
+    "InputProvider",
     "Light",
+    "LocalizationProvider",
     "MeshObject",
     "Model",
     "ModelDocument",
@@ -35,19 +68,36 @@ __all__ = [
     "NativeFunction",
     "NativeLibrary",
     "NativeLibraryService",
+    "NavigationProvider",
+    "NetworkProvider",
     "OBJECT_TYPES",
     "ObjectRegistry",
+    "PhysicsProvider",
+    "PlayerProvider",
+    "PlayerScriptProvider",
+    "PlayerUIProvider",
     "PortaPyRuntime",
     "Property",
+    "Provider",
     "PythonScript",
     "RenderService",
+    "RuntimeRealm",
+    "Scene",
     "ScriptService",
+    "ServerScriptProvider",
+    "ServerStorage",
     "Service",
+    "SharedStorage",
     "Signal",
     "SomniaObject",
+    "TimeProvider",
     "UnknownModelNode",
     "UnknownObject",
     "World",
+    "canonical_provider_types",
+    "get_provider",
+    "install_canonical_providers",
     "register_object_class",
+    "resolve_provider_type",
     "serialize_value",
 ]
