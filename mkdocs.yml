@@ -1,0 +1,47 @@
+site_name: Somnia Engine Documentation
+site_description: Documentation for the Somnia Engine editor, runtime, object model, formats, and embedded Python architecture.
+site_author: Pixelated Dream
+repo_name: deltathedumb/somnia
+repo_url: https://github.com/deltathedumb/somnia
+edit_uri: edit/main/docs/
+docs_dir: docs
+site_dir: site
+strict: true
+
+nav:
+  - Home: index.md
+  - Architecture:
+      - Unified object model: architecture.md
+      - Editor data model: editor-model.md
+      - Foundation status: foundation-status.md
+      - Roadmap: roadmap.md
+  - Models:
+      - SEM and SEMJ: model-formats.md
+  - Native integration:
+      - Native libraries: native-libraries.md
+      - Embedded Python and PortaPy: embedded-python.md
+  - Development:
+      - Testing: testing.md
+      - Contributing: contributing.md
+      - Security: security.md
+
+theme:
+  name: mkdocs
+  locale: en
+  highlightjs: true
+  hljs_languages:
+    - python
+    - json
+    - bash
+
+extra_css:
+  - assets/stylesheets/somnia.css
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - fenced_code
+  - tables
+  - toc:
+      permalink: true
