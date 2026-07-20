@@ -1,18 +1,42 @@
-"""Scene objects shared by editor and runtime."""
+"""Scene objects and visible world providers shared by editor and runtime."""
 
 from __future__ import annotations
 
 from somnia.math import Vec3
 
 from .core import ModelNode, Property, Service, register_object_class
+from .provider import Provider, RuntimeRealm
 
 
-@register_object_class("somnia.World")
-class World(Service):
-    gravity = Property(Vec3(0.0, -9.81, 0.0), value_type=Vec3, category="Physics")
+@register_object_class("somnia.Scene")
+class Scene(Provider):
+    """Workspace-equivalent provider containing the live spatial hierarchy."""
 
-    def __init__(self, object_id=None, name=None):
-        super().__init__(object_id=object_id, name=name or "World")
+    provider_key = "Scene"
+    fixed_name = "Scene"
+    runtime_realms = (RuntimeRealm.SERVER, RuntimeRealm.CLIENT)
+
+    active_camera_id = Property("", value_type=str, category="Scene")
+
+
+# Backward-compatible source alias. New serialized documents use somnia.Scene.
+World = Scene
+
+
+@register_object_class("somnia.Environment")
+class Environment(Provider):
+    """Lighting-equivalent provider for global visual environment state."""
+
+    provider_key = "Environment"
+    fixed_name = "Environment"
+    runtime_realms = (RuntimeRealm.SERVER, RuntimeRealm.CLIENT)
+
+    clear_color = Property(Vec3(0.05, 0.05, 0.08), value_type=Vec3, category="Environment")
+    ambient_color = Property(Vec3(0.2, 0.2, 0.2), value_type=Vec3, category="Environment")
+    fog_color = Property(Vec3(0.5, 0.5, 0.5), value_type=Vec3, category="Environment")
+    fog_start = Property(0.0, value_type=float, category="Environment", minimum=0.0)
+    fog_end = Property(1000.0, value_type=float, category="Environment", minimum=0.0)
+    time_of_day = Property(12.0, value_type=float, category="Environment", minimum=0.0, maximum=24.0)
 
 
 @register_object_class("somnia.Camera")
@@ -70,6 +94,8 @@ class Light(ModelNode):
 
 @register_object_class("somnia.RenderService")
 class RenderService(Service):
+    """Deprecated compatibility object; rendering now reads Scene/Environment."""
+
     backend = Property("null", value_type=str, category="Rendering")
     active_camera_id = Property("", value_type=str, category="Rendering")
     clear_color = Property(Vec3(0.05, 0.05, 0.08), value_type=Vec3, category="Rendering")
