@@ -40,7 +40,8 @@ class RuntimeFoundationTests(unittest.TestCase):
         library.add_child(function)
 
         source = library.generated_binding_source(platform="win32")
-        self.assertIn('import_binary("core.dll")', source)
+        self.assertIn("library = import_binary(", source)
+        self.assertIn("core.dll", source)
         self.assertIn("@library.imported", source)
         self.assertIn("def add_values(arg0: int, arg1: int) -> int:", source)
 
