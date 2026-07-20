@@ -23,6 +23,7 @@ nav:
   - Development:
       - Testing: testing.md
       - Contributing: contributing.md
+      - Licensing: licensing.md
       - Security: security.md
 
 theme:
