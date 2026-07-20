@@ -25,10 +25,13 @@ from .model import (
     World,
     register_object_class,
 )
+from .rendering import NullRenderer, RaylibRenderer, RecordingRaylibBridge
+from .runtime import Engine
 
 __all__ = [
     "Camera",
     "DataModel",
+    "Engine",
     "Folder",
     "Light",
     "MeshObject",
@@ -38,11 +41,14 @@ __all__ = [
     "NativeFunction",
     "NativeLibrary",
     "NativeLibraryService",
+    "NullRenderer",
     "ObjectRegistry",
     "PortaPyRuntime",
     "Property",
     "PythonScript",
     "Quaternion",
+    "RaylibRenderer",
+    "RecordingRaylibBridge",
     "RenderService",
     "ScriptService",
     "SomniaObject",
