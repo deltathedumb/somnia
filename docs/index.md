@@ -47,3 +47,5 @@ mkdocs build --strict
 ```
 
 The generated website is written to `site/`.
+
+<!-- Final temporary verification marker. -->
