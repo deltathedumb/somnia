@@ -17,8 +17,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install Somnia in editable mode
+        run: python -m pip install -e .
       - name: Compile Python sources
-        run: python -m compileall -q somnia tests tools examples
+        run: python -m compileall -q src/somnia tests tools examples
       - name: Run unit tests
         id: unit_tests
         continue-on-error: true
@@ -58,7 +60,7 @@ jobs:
       - name: Audit receiver semantic rule
         continue-on-error: true
         env:
-          PYTHONPATH: ${{ github.workspace }}/../asmpython:${{ github.workspace }}
+          PYTHONPATH: ${{ github.workspace }}/../asmpython:${{ github.workspace }}/src:${{ github.workspace }}
         run: |
           python -m asmpython._compiler.receiver_audit \
             > asmpython-receiver-audit.txt 2>&1
@@ -66,11 +68,13 @@ jobs:
         id: import_audit
         continue-on-error: true
         env:
-          PYTHONPATH: ${{ github.workspace }}/../asmpython:${{ github.workspace }}
+          PYTHONPATH: ${{ github.workspace }}/../asmpython:${{ github.workspace }}/src:${{ github.workspace }}
         run: |
+          cp tests/parity/model_snapshot.py src/_somnia_import_audit.py
           python -m asmpython._compiler.import_audit \
-            tests/parity/model_snapshot.py \
+            src/_somnia_import_audit.py \
             > asmpython-import-audit.txt 2>&1
+          rm -f src/_somnia_import_audit.py
       - name: Show compiler audits
         if: always()
         run: |
@@ -80,7 +84,7 @@ jobs:
         id: parity
         continue-on-error: true
         env:
-          PYTHONPATH: ${{ github.workspace }}/../asmpython:${{ github.workspace }}
+          PYTHONPATH: ${{ github.workspace }}/../asmpython:${{ github.workspace }}/src:${{ github.workspace }}
         run: |
           python tools/dualrun.py tests/parity/model_snapshot.py \
             > asmpython-parity.txt 2>&1
