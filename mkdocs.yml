@@ -12,6 +12,8 @@ nav:
   - Home: index.md
   - Architecture:
       - Unified object model: architecture.md
+      - Providers: providers.md
+      - Client and server exports: exports.md
       - Editor data model: editor-model.md
       - Foundation status: foundation-status.md
       - Roadmap: roadmap.md
