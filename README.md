@@ -31,7 +31,7 @@ This repository contains the first engine foundation:
 
 ```bash
 python -m unittest discover -s tests -v
-python examples/foundation.py
+python -m examples.foundation
 ```
 
 To compare CPython behavior with an asmpython-compiled executable:
@@ -55,5 +55,11 @@ tests/           CPython unit and cross-runtime parity tests
 tools/           Developer and compiler-differential tools
 docs/            Architecture and format specifications
 ```
+
+## License
+
+Somnia Engine is licensed under the [Mozilla Public License 2.0](LICENSE).
+
+The MPL applies at the source-file level. Games, scripts, plugins, models, assets, and other separate project files do not become MPL-licensed merely because they use Somnia. When distributing modified Somnia-covered files, those files and their source must remain available under MPL-2.0. Third-party dependencies remain governed by their own licenses.
 
 Somnia Engine is developed by Pixelated Dream.
