@@ -20,11 +20,29 @@ jobs:
       - name: Compile Python sources
         run: python -m compileall -q somnia tests tools examples
       - name: Run unit tests
-        run: python -m unittest discover -s tests -v
+        id: unit_tests
+        continue-on-error: true
+        run: python -m unittest discover -s tests -v > cpython-tests.txt 2>&1
+      - name: Show unit-test diagnostic
+        if: always()
+        run: cat cpython-tests.txt
+      - name: Upload unit-test diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpython-foundation-tests
+          path: cpython-tests.txt
+          if-no-files-found: error
+          retention-days: 7
       - name: Run foundation example
+        if: always()
         run: python examples/foundation.py
       - name: Run deterministic reference snapshot
+        if: always()
         run: python tests/parity/model_snapshot.py
+      - name: Fail if unit tests failed
+        if: steps.unit_tests.outcome != 'success'
+        run: exit 1
 
   asmpython-compatibility:
     runs-on: ubuntu-24.04
