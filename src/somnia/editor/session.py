@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from somnia.model import OBJECT_TYPES
+from somnia.model import OBJECT_TYPES, Provider
 
 from .commands import (
     CreateObjectCommand,
@@ -23,8 +23,22 @@ class EditorSession:
         self.selection = self.editor_service.get_service(SelectionService)
         self.history = self.editor_service.get_service(HistoryService)
 
-    def scene_tree(self):
-        return list(self.data_model.walk(include_self=True))
+    def scene_tree(self, show_hidden_providers=False):
+        result = []
+
+        def append_visible(obj):
+            if (
+                isinstance(obj, Provider)
+                and obj.hidden_by_default
+                and not show_hidden_providers
+            ):
+                return
+            result.append(obj)
+            for child in obj.children:
+                append_visible(child)
+
+        append_visible(self.data_model)
+        return result
 
     def create_object(self, type_name, parent, name=None, index=None):
         obj = OBJECT_TYPES.create(type_name, name=name)
@@ -33,10 +47,14 @@ class EditorSession:
         return obj
 
     def delete_object(self, obj):
+        if isinstance(obj, Provider):
+            raise ValueError("canonical providers cannot be deleted from the editor")
         self.history.execute(DeleteObjectCommand(obj))
         self.selection.clear()
 
     def reparent_object(self, obj, new_parent, index=None):
+        if isinstance(obj, Provider):
+            raise ValueError("canonical providers cannot be reparented")
         self.history.execute(ReparentCommand(obj, new_parent, new_index=index))
 
     def set_property(self, obj, property_name, value):
