@@ -58,12 +58,27 @@ The bridge must exist at the platform path declared by the
 ## asmpython builds
 
 The same `NativeLibrary`/`NativeFunction` hierarchy generates static
-`import_binary` declarations for asmpython. This avoids maintaining a separate
-handwritten ABI manifest.
+`import_binary` declarations and a fully typed adapter class for asmpython.
+Generate it with:
 
-The generated binding module is then wrapped as the bridge object supplied to
-`RaylibRenderer`. Static adapter generation is the next integration step; the
-underlying declarations and flat native ABI are already in place.
+```bash
+python -m tools.generate_raylib_bindings \
+  .generated/raylib_native.py \
+  --platform linux
+```
+
+Then supply the generated bridge to the renderer:
+
+```python
+from somnia import RaylibRenderer
+from .generated.raylib_native import bridge
+
+renderer = RaylibRenderer(bridge=bridge)
+```
+
+The generated module contains the decorated native declarations,
+`GeneratedRaylibBridge`, and a ready-to-use `bridge` instance. Both CPython and
+asmpython therefore originate from the same serialized ABI manifest.
 
 ## Run the first window
 
