@@ -5,6 +5,7 @@ import unittest
 from somnia import Camera, Engine, MeshObject, RaylibRenderer, RecordingRaylibBridge, World
 from somnia.math import Transform, Vec3
 from somnia.rendering import create_raylib_library
+from somnia.rendering.raylib_codegen import generate_raylib_bridge_source
 
 
 class RaylibRendererTests(unittest.TestCase):
@@ -95,6 +96,14 @@ class RaylibRendererTests(unittest.TestCase):
         self.assertIn("@library.imported", source)
         self.assertIn("def somnia_raylib_open", source)
         self.assertIn("def somnia_raylib_draw_cube", source)
+
+    def test_generated_adapter_is_valid_python(self) -> None:
+        source = generate_raylib_bridge_source(platform="linux")
+        compile(source, "<generated-raylib-bridge>", "exec")
+        self.assertIn("class GeneratedRaylibBridge", source)
+        self.assertIn("bridge = GeneratedRaylibBridge()", source)
+        self.assertIn("def begin_3d(", source)
+        self.assertIn("def draw_cube_wires(", source)
 
 
 if __name__ == "__main__":
