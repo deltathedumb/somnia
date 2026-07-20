@@ -51,7 +51,7 @@ Python/asmpython is the intended scripting system. Luau support is not on the ro
 
 ## Near-term architecture
 
-- `somnia.math`: object registry and hierarchy
+- `somnia.math`: shared engine value math
 - `somnia.model`: object registry and hierarchy
 - `somnia.formats`: SEM/SEMJ codecs
 - `somnia.rendering`: backend-neutral render contract
