@@ -55,6 +55,13 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq nasm
       - name: Check out asmpython beta/3.14.0
         run: git clone --depth 1 --branch beta/3.14.0 https://github.com/deltathedumb/asmpython.git ../asmpython
+      - name: Audit receiver semantic rule
+        continue-on-error: true
+        env:
+          PYTHONPATH: ${{ github.workspace }}/../asmpython:${{ github.workspace }}
+        run: |
+          python -m asmpython._compiler.receiver_audit \
+            > asmpython-receiver-audit.txt 2>&1
       - name: Audit whole-program import graph
         id: import_audit
         continue-on-error: true
@@ -64,9 +71,11 @@ jobs:
           python -m asmpython._compiler.import_audit \
             tests/parity/model_snapshot.py \
             > asmpython-import-audit.txt 2>&1
-      - name: Show import-graph diagnostic
+      - name: Show compiler audits
         if: always()
-        run: cat asmpython-import-audit.txt
+        run: |
+          cat asmpython-receiver-audit.txt
+          cat asmpython-import-audit.txt
       - name: Run CPython/asmpython differential probe
         id: parity
         continue-on-error: true
@@ -84,6 +93,7 @@ jobs:
         with:
           name: asmpython-foundation-diagnostics
           path: |
+            asmpython-receiver-audit.txt
             asmpython-import-audit.txt
             asmpython-parity.txt
           if-no-files-found: error
