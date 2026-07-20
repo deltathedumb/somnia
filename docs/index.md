@@ -29,6 +29,7 @@ The initial engine foundation includes:
 - [SEM and SEMJ formats](model-formats.md)
 - [Native-library objects](native-libraries.md)
 - [Embedded Python with PortaPy](embedded-python.md)
+- [Licensing](licensing.md)
 - [Current foundation status](foundation-status.md)
 
 ## Build and test
@@ -47,3 +48,7 @@ mkdocs build --strict
 ```
 
 The generated website is written to `site/`.
+
+## License
+
+Somnia Engine is licensed under the Mozilla Public License 2.0. Games and other separate project content are not automatically covered merely because they use Somnia; see the [licensing guide](licensing.md) for details.
