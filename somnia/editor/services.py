@@ -12,6 +12,20 @@ class EditorService(Service):
     def __init__(self, object_id=None, name=None):
         super().__init__(object_id=object_id, name=name or "Editor")
 
+    def get_service(self, service_type):
+        for child in self.children:
+            if isinstance(child, service_type):
+                return child
+        return None
+
+    def ensure_service(self, service_type, name=None):
+        existing = self.get_service(service_type)
+        if existing is not None:
+            return existing
+        service = service_type(name=name)
+        self.add_child(service)
+        return service
+
 
 @register_object_class("somnia.editor.SelectionService")
 class SelectionService(Service):
@@ -109,8 +123,6 @@ class HistoryService(Service):
 def install_editor_services(data_model):
     """Install the editor branch into an editor DataModel."""
     editor = data_model.ensure_service(EditorService)
-    if editor.get_service(SelectionService) is None:
-        editor.add_child(SelectionService())
-    if editor.get_service(HistoryService) is None:
-        editor.add_child(HistoryService())
+    editor.ensure_service(SelectionService)
+    editor.ensure_service(HistoryService)
     return editor
