@@ -36,10 +36,10 @@ jobs:
           retention-days: 7
       - name: Run foundation example
         if: always()
-        run: python examples/foundation.py
+        run: python -m examples.foundation
       - name: Run deterministic reference snapshot
         if: always()
-        run: python tests/parity/model_snapshot.py
+        run: python -m tests.parity.model_snapshot
       - name: Fail if unit tests failed
         if: steps.unit_tests.outcome != 'success'
         run: exit 1
