@@ -27,7 +27,10 @@ The editor may borrow productive ideas from Roblox Studio—scene hierarchy, pro
    - runtime gap,
    - FFI gap,
    - intentional language difference.
-6. Do not deform clean engine architecture merely to conceal an asmpython limitation. Add a focused reproducer and either fix asmpython or use a clearly documented temporary workaround.
+6. Do not deform clean engine architecture merely to conceal an asmpython limitation.
+7. When valid Somnia Python is blocked by missing compiler, runtime, stdlib, linker, or FFI behavior, implement the missing capability in `deltathedumb/asmpython` first and add a focused asmpython regression case.
+8. Temporary Somnia workarounds are allowed only when the behavior is intentionally outside Python/asmpython scope or an external dependency makes the direct implementation impossible. Document every workaround and remove it after the upstream capability exists.
+9. Re-run the unchanged Somnia differential case after each asmpython fix. The clean Somnia source is the acceptance test.
 
 ## Object model
 
