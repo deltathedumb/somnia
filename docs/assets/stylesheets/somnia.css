@@ -1,0 +1,45 @@
+:root {
+  --somnia-purple: #9500ff;
+  --somnia-purple-dark: #5c009d;
+  --somnia-ink: #17131d;
+  --somnia-panel: #f5f0f9;
+}
+
+body {
+  color: var(--somnia-ink);
+}
+
+.navbar {
+  background: linear-gradient(120deg, var(--somnia-purple-dark), var(--somnia-purple));
+}
+
+.navbar-brand,
+.navbar-nav .nav-link {
+  color: #ffffff !important;
+}
+
+.bs-sidebar .nav > li > a.active,
+.bs-sidebar .nav > li > a:hover,
+a {
+  color: var(--somnia-purple-dark);
+}
+
+blockquote {
+  border-left: 0.3rem solid var(--somnia-purple);
+  background: var(--somnia-panel);
+  padding: 0.75rem 1rem;
+}
+
+code {
+  color: var(--somnia-purple-dark);
+}
+
+pre code {
+  color: inherit;
+}
+
+h1,
+h2,
+h3 {
+  scroll-margin-top: 5rem;
+}
