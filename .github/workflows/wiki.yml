@@ -1,0 +1,63 @@
+name: Sync Somnia GitHub Wiki
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "tools/build_wiki.py"
+      - ".github/workflows/wiki.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: somnia-wiki
+  cancel-in-progress: false
+
+jobs:
+  sync-wiki:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build wiki pages from canonical docs
+        run: python tools/build_wiki.py --output .wiki-build
+
+      - name: Synchronize GitHub Wiki repository
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          wiki_url="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git"
+
+          if git clone "$wiki_url" .wiki-repository; then
+            echo "Existing wiki repository cloned."
+          else
+            echo "Wiki repository is not initialized; attempting first push initialization."
+            mkdir .wiki-repository
+            git -C .wiki-repository init --initial-branch=master
+            git -C .wiki-repository remote add origin "$wiki_url"
+          fi
+
+          find .wiki-repository -mindepth 1 -maxdepth 1 \
+            ! -name .git -exec rm -rf {} +
+          cp .wiki-build/*.md .wiki-repository/
+
+          git -C .wiki-repository config user.name "github-actions[bot]"
+          git -C .wiki-repository config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C .wiki-repository add --all
+
+          if git -C .wiki-repository diff --cached --quiet; then
+            echo "Wiki is already current."
+            exit 0
+          fi
+
+          git -C .wiki-repository commit -m "Synchronize Somnia documentation"
+          git -C .wiki-repository push origin HEAD:master
