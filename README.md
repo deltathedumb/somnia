@@ -30,6 +30,7 @@ This repository contains the first engine foundation:
 ## Quick start
 
 ```bash
+python -m pip install -e .
 python -m unittest discover -s tests -v
 python -m examples.foundation
 ```
@@ -45,15 +46,16 @@ The dual runner requires an accessible asmpython checkout or installation.
 ## Repository layout
 
 ```text
-somnia/
-  math/          Engine math values
-  model/         Serializable model graph
-  formats/       SEM and SEMJ codecs
-  rendering/     Renderer contracts and test backend
-examples/        Small runnable engine slices
-tests/           CPython unit and cross-runtime parity tests
-tools/           Developer and compiler-differential tools
-docs/            Architecture and format specifications
+src/
+  somnia/
+    math/          Engine math values
+    model/         Serializable model graph
+    formats/       SEM and SEMJ codecs
+    rendering/     Renderer contracts and test backend
+examples/          Small runnable engine slices
+tests/             CPython unit and cross-runtime parity tests
+tools/             Developer and compiler-differential tools
+docs/              Architecture and format specifications
 ```
 
 ## License
