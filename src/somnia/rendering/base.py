@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from somnia.model.scene import Camera, MeshObject, RenderService
+from somnia.model.providers import get_provider
+from somnia.model.scene import Camera, Environment, MeshObject, Scene
 
 
 class RenderFrame:
@@ -53,8 +54,8 @@ class Renderer:
 
 
 def find_active_camera(data_model):
-    render_service = data_model.get_service(RenderService)
-    requested_id = render_service.active_camera_id if render_service is not None else ""
+    scene = get_provider(data_model, Scene, create=False)
+    requested_id = scene.active_camera_id if scene is not None else ""
     first_active = None
     for obj in data_model.walk(include_self=True):
         if isinstance(obj, Camera) and obj.enabled and obj.active:
@@ -106,8 +107,8 @@ def mesh_command(obj):
 def build_render_frame(data_model):
     """Build the canonical frame consumed by null and native renderers."""
     camera = find_active_camera(data_model)
-    render_service = data_model.get_service(RenderService)
-    clear_color = render_service.clear_color if render_service is not None else None
+    environment = get_provider(data_model, Environment, create=False)
+    clear_color = environment.clear_color if environment is not None else None
     commands = []
     for obj in collect_mesh_objects(data_model):
         commands.append(mesh_command(obj))
