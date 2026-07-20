@@ -26,6 +26,9 @@ class Camera(ModelNode):
     )
     near_clip = Property(0.05, value_type=float, category="Camera", minimum=0.0001)
     far_clip = Property(10000.0, value_type=float, category="Camera", minimum=0.001)
+    target = Property(Vec3.zero(), value_type=Vec3, category="Camera")
+    up = Property(Vec3(0.0, 1.0, 0.0), value_type=Vec3, category="Camera")
+    projection = Property("perspective", value_type=str, category="Camera")
     active = Property(True, value_type=bool, category="Camera")
 
     def __init__(self, object_id=None, name=None):
@@ -36,7 +39,16 @@ class Camera(ModelNode):
 class MeshObject(ModelNode):
     mesh = Property("", value_type=str, category="Rendering")
     material = Property("", value_type=str, category="Rendering")
+    color = Property(Vec3(0.584, 0.0, 1.0), value_type=Vec3, category="Rendering")
+    opacity = Property(
+        1.0,
+        value_type=float,
+        category="Rendering",
+        minimum=0.0,
+        maximum=1.0,
+    )
     visible = Property(True, value_type=bool, category="Rendering")
+    wireframe = Property(False, value_type=bool, category="Rendering")
     cast_shadows = Property(True, value_type=bool, category="Rendering")
     receive_shadows = Property(True, value_type=bool, category="Rendering")
 
