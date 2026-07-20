@@ -1,0 +1,20 @@
+__pycache__/
+*.py[cod]
+*.pyd
+*.dll
+*.so
+*.dylib
+*.exe
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.coverage
+
+# Somnia generated output
+.somnia/
+.generated/
+*.sem.tmp
+*.semj.tmp
