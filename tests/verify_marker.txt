@@ -1,1 +1,2 @@
 Somnia foundation verification marker.
+Re-run after sibling project-package import resolution fix.
