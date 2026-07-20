@@ -32,11 +32,28 @@ jobs:
       - name: Install documentation dependencies
         run: python -m pip install -r requirements-docs.txt
       - name: Build strict HTML documentation
-        run: mkdocs build --strict
+        id: build
+        continue-on-error: true
+        run: mkdocs build --strict > mkdocs-build.txt 2>&1
+      - name: Show strict-build diagnostic
+        if: always()
+        run: cat mkdocs-build.txt
+      - name: Upload strict-build diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: somnia-html-documentation-log
+          path: mkdocs-build.txt
+          if-no-files-found: error
+          retention-days: 14
       - name: Upload generated HTML site
+        if: steps.build.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: somnia-html-documentation
           path: site/
           if-no-files-found: error
           retention-days: 14
+      - name: Fail if strict HTML build failed
+        if: steps.build.outcome != 'success'
+        run: exit 1
