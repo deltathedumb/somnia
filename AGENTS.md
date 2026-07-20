@@ -6,6 +6,15 @@ Somnia is a standalone, local-first game engine. It is not a Roblox-like hosting
 
 The editor may borrow productive ideas from Roblox Studio—scene hierarchy, property inspection, live play, and approachable object scripting—without inheriting platform lock-in.
 
+## License policy
+
+- Somnia Engine is licensed under the Mozilla Public License 2.0 (`MPL-2.0`).
+- Preserve the root `LICENSE` and `NOTICE` files and all applicable third-party notices.
+- Distributed modifications to MPL-covered Somnia files must remain available under MPL-2.0.
+- Separate games, scripts, plugins, native libraries, models, and assets are not automatically MPL-covered merely because they use Somnia.
+- Do not copy third-party code into Somnia unless its license is compatible with MPL-2.0 and all required attribution is recorded.
+- New documentation about licensing must remain consistent with `LICENSE`; the license text controls if a summary differs.
+
 ## Language and compiler policy
 
 1. Write engine source as clear, ordinary Python.
@@ -42,7 +51,7 @@ Python/asmpython is the intended scripting system. Luau support is not on the ro
 
 ## Near-term architecture
 
-- `somnia.math`: value math
+- `somnia.math`: object registry and hierarchy
 - `somnia.model`: object registry and hierarchy
 - `somnia.formats`: SEM/SEMJ codecs
 - `somnia.rendering`: backend-neutral render contract
