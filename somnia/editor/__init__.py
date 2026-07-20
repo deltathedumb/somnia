@@ -13,12 +13,14 @@ from .services import (
     SelectionService,
     install_editor_services,
 )
+from .session import EditorSession
 
 __all__ = [
     "Command",
     "CreateObjectCommand",
     "DeleteObjectCommand",
     "EditorService",
+    "EditorSession",
     "HistoryService",
     "ReparentCommand",
     "SelectionService",
