@@ -7,9 +7,15 @@ name = "somnia-engine"
 version = "0.0.1"
 description = "A standalone Python-native game engine compiled with asmpython"
 readme = "README.md"
+license = { file = "LICENSE" }
 requires-python = ">=3.12"
 authors = [
   { name = "Pixelated Dream" }
+]
+classifiers = [
+  "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
 ]
 dependencies = []
 
