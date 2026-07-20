@@ -85,12 +85,23 @@ jobs:
             src/_somnia_type_audit.py \
             > asmpython-type-audit.txt 2>&1
           rm -f src/_somnia_type_audit.py
+      - name: Audit post-sema indexed assignments
+        continue-on-error: true
+        env:
+          PYTHONPATH: ${{ github.workspace }}/../asmpython:${{ github.workspace }}/src:${{ github.workspace }}
+        run: |
+          cp tests/parity/model_snapshot.py src/_somnia_index_audit.py
+          python -m asmpython._compiler.index_assignment_audit \
+            src/_somnia_index_audit.py \
+            > asmpython-index-audit.txt 2>&1
+          rm -f src/_somnia_index_audit.py
       - name: Show compiler audits
         if: always()
         run: |
           cat asmpython-receiver-audit.txt
           cat asmpython-import-audit.txt
           cat asmpython-type-audit.txt
+          cat asmpython-index-audit.txt
       - name: Run CPython/asmpython differential probe
         id: parity
         continue-on-error: true
@@ -111,6 +122,7 @@ jobs:
             asmpython-receiver-audit.txt
             asmpython-import-audit.txt
             asmpython-type-audit.txt
+            asmpython-index-audit.txt
             asmpython-parity.txt
           if-no-files-found: error
           retention-days: 7
