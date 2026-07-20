@@ -16,6 +16,7 @@ from .core import (
     register_object_class,
     serialize_value,
 )
+from .document import ModelDocument
 
 # Import built-in object classes for registration side effects.
 from .native import NativeFunction, NativeLibrary, NativeLibraryService
@@ -25,6 +26,7 @@ __all__ = [
     "DataModel",
     "Folder",
     "Model",
+    "ModelDocument",
     "ModelNode",
     "NativeFunction",
     "NativeLibrary",
