@@ -1,0 +1,66 @@
+name: Somnia foundation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cpython:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile Python sources
+        run: python -m compileall -q somnia tests tools examples
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Run foundation example
+        run: python examples/foundation.py
+      - name: Run deterministic reference snapshot
+        run: python tests/parity/model_snapshot.py
+
+  asmpython-compatibility:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install native toolchain
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq nasm
+      - name: Check out asmpython beta/3.14.0
+        run: git clone --depth 1 --branch beta/3.14.0 https://github.com/deltathedumb/asmpython.git ../asmpython
+      - name: Run CPython/asmpython differential probe
+        id: parity
+        continue-on-error: true
+        env:
+          PYTHONPATH: ${{ github.workspace }}/../asmpython:${{ github.workspace }}
+        run: |
+          python tools/dualrun.py tests/parity/model_snapshot.py \
+            > asmpython-parity.txt 2>&1
+      - name: Show differential diagnostic
+        if: always()
+        run: cat asmpython-parity.txt
+      - name: Upload differential diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: asmpython-foundation-parity
+          path: asmpython-parity.txt
+          if-no-files-found: error
+          retention-days: 7
+      - name: Record current compatibility status
+        if: always()
+        run: |
+          if [ "${{ steps.parity.outcome }}" = "success" ]; then
+            echo "asmpython parity passed"
+          else
+            echo "asmpython parity currently has a documented compiler/runtime gap"
+          fi
