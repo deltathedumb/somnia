@@ -21,6 +21,7 @@ class Engine:
         self.initialized = False
         self.script_hosts = []
         self.frame_number = 0
+        self.delta_time = 0.0
         self.install_foundation_services()
 
     def install_foundation_services(self):
@@ -56,8 +57,22 @@ class Engine:
             self.initialize()
         render_frame = self.renderer.build_frame(self.data_model)
         self.renderer.present(render_frame)
+        self.delta_time = self.renderer.frame_time()
         self.frame_number += 1
         return render_frame
+
+    def run(self, max_frames=None):
+        """Run frames until the renderer closes or an optional limit is reached."""
+        if not self.initialized:
+            self.initialize()
+        if max_frames is None and self.renderer.backend_name == "null":
+            max_frames = 1
+        frames = []
+        while not self.renderer.should_close():
+            frames.append(self.frame())
+            if max_frames is not None and len(frames) >= max_frames:
+                break
+        return frames
 
     def shutdown(self):
         for host in reversed(self.script_hosts):
@@ -90,4 +105,7 @@ class Engine:
         cloned = clone_object(self.data_model)
         if not isinstance(cloned, DataModel):
             raise RuntimeError("play clone did not produce a DataModel")
-        return Engine(data_model=cloned, renderer=type(self.renderer)())
+        return Engine(
+            data_model=cloned,
+            renderer=self.renderer.clone_for_runtime(),
+        )
