@@ -24,6 +24,7 @@ nav:
       - Testing: testing.md
       - Contributing: contributing.md
       - Security: security.md
+      - Markdown documentation index: README.md
 
 theme:
   name: mkdocs
