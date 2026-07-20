@@ -45,6 +45,9 @@ class Renderer:
     def frame_time(self):
         return 0.0
 
+    def clone_for_runtime(self):
+        return type(self)()
+
     def shutdown(self):
         raise NotImplementedError
 
