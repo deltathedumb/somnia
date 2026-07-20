@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "somnia-engine"
+version = "0.0.1"
+description = "A standalone Python-native game engine compiled with asmpython"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+  { name = "Pixelated Dream" }
+]
+dependencies = []
+
+[tool.setuptools.packages.find]
+include = ["somnia*"]
+
+[tool.somnia]
+model_json_extension = ".semj"
+model_binary_extension = ".sem"
+reference_runtime = "cpython"
+production_compiler = "asmpython"
