@@ -1,9 +1,9 @@
-"""Client/server export planning derived from provider realm metadata."""
+"""Client/server export planning derived from fixed realm roots."""
 
 from __future__ import annotations
 
 from .model.core import OBJECT_TYPES
-from .model.provider import Game, Provider, RuntimeRealm
+from .model.provider import Game, Provider, RealmRoot, RuntimeRealm
 
 
 class ExportType:
@@ -29,11 +29,16 @@ class RuntimePackage:
         self.realm = RuntimeRealm.normalize(realm)
         self.data_model = data_model
 
+    def root_names(self):
+        return [root.name for root in self.data_model.realm_roots()]
+
     def provider_names(self):
+        return [provider.provider_key for provider in self.data_model.providers()]
+
+    def provider_paths(self):
         return [
-            child.provider_key
-            for child in self.data_model.children
-            if isinstance(child, Provider)
+            provider.realm_root.name + "." + provider.provider_key
+            for provider in self.data_model.providers()
         ]
 
 
@@ -68,8 +73,13 @@ class ExportPlan:
             if self.integrated_server:
                 raise ValueError("DedicatedClient exports cannot contain an integrated server")
 
+        if server_package is not None:
+            if server_package.root_names() != ["Server", "Shared"]:
+                raise ValueError("server packages must contain only Server and Shared roots")
         if client_package is not None:
-            forbidden = {"ServerScriptProvider", "ServerStorage"}
+            if client_package.root_names() != ["Shared", "Client"]:
+                raise ValueError("client packages must contain only Shared and Client roots")
+            forbidden = {"ServerScriptProvider", "ServerStorage", "PhysicsProvider"}
             leaked = forbidden.intersection(client_package.provider_names())
             if leaked:
                 raise ValueError(
@@ -86,7 +96,8 @@ class ExportPlan:
             "packages": [
                 {
                     "realm": package.realm,
-                    "providers": package.provider_names(),
+                    "roots": package.root_names(),
+                    "providers": package.provider_paths(),
                 }
                 for package in self.packages
             ],
@@ -94,7 +105,11 @@ class ExportPlan:
 
 
 def _clone_object(source):
-    clone = OBJECT_TYPES.create(source.type_name, name=source.name)
+    clone = OBJECT_TYPES.create(
+        source.type_name,
+        object_id=source.object_id,
+        name=source.name,
+    )
     clone.tags = list(source.tags)
     clone.extensions = dict(source.extensions)
     clone.extensions["source_object_id"] = source.object_id
@@ -110,7 +125,7 @@ def clone_game_for_realm(source_game, realm):
     result.extensions["source_object_id"] = source_game.object_id
 
     def clone_tree(source, parent):
-        if isinstance(source, Provider) and not source.supports_realm(normalized):
+        if source.type_name.startswith("somnia.editor."):
             return None
         clone = _clone_object(source)
         parent.add_child(clone)
@@ -119,7 +134,9 @@ def clone_game_for_realm(source_game, realm):
         return clone
 
     for child in source_game.children:
-        if child.type_name.startswith("somnia.editor."):
+        if not isinstance(child, RealmRoot):
+            continue
+        if not child.supports_runtime(normalized):
             continue
         clone_tree(child, result)
     return result
