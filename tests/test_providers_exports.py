@@ -7,10 +7,9 @@ from somnia import (
     Engine,
     ExportType,
     Game,
+    NetworkProvider,
     PhysicsProvider,
-    PlayerUIProvider,
     Scene,
-    ServerScriptProvider,
     ServerStorage,
     SharedStorage,
 )
@@ -84,6 +83,35 @@ class ProviderAndExportTests(unittest.TestCase):
         self.assertNotIn("PlayerUIProvider", server.provider_names())
         self.assertIn("PlayerUIProvider", client.provider_names())
         self.assertNotIn("ServerScriptProvider", client.provider_names())
+
+    def test_client_play_connects_separate_realms_through_network_provider(self) -> None:
+        authoring_engine = Engine(Game())
+        client_engine = authoring_engine.clone_for_play()
+        server_engine = client_engine.integrated_server
+
+        client_network = client_engine.get_provider(NetworkProvider)
+        server_network = server_engine.get_provider(NetworkProvider)
+
+        self.assertTrue(client_network.connected)
+        self.assertTrue(server_network.connected)
+        self.assertEqual(client_network.transport_backend, "local")
+        self.assertEqual(server_network.transport_backend, "local")
+
+        client_network.send("JoinRequest", {"name": "Mabel"})
+        server_packets = server_network.receive()
+        self.assertEqual(len(server_packets), 1)
+        self.assertEqual(server_packets[0].channel, "JoinRequest")
+        self.assertEqual(server_packets[0].payload, {"name": "Mabel"})
+        self.assertEqual(server_packets[0].sender, "client")
+
+        server_network.send("JoinAccepted", {"player_id": "local"})
+        client_packets = client_network.receive()
+        self.assertEqual(client_packets[0].channel, "JoinAccepted")
+        self.assertEqual(client_packets[0].sender, "server")
+
+        client_engine.shutdown()
+        self.assertFalse(client_network.connected)
+        self.assertFalse(server_network.connected)
 
     def test_dedicated_server_omits_client_only_providers(self) -> None:
         engine = Engine(Game())
