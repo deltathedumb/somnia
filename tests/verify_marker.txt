@@ -1,1 +1,1 @@
-Somnia provider/export verification after chained receiver typing support.
+Somnia provider/export verification after preloaded chained receiver return types.
