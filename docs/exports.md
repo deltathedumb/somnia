@@ -1,6 +1,21 @@
 # Export types
 
-Somnia projects are always logically split into server and client runtimes. Exporting partitions the same authored `Game` hierarchy according to provider realm metadata.
+Somnia projects are authored beneath three fixed roots: `Server`, `Shared`, and `Client`. Exporting clones complete roots into independent runtime DataModels.
+
+## Root partition
+
+```text
+Authored Game
+├── Server
+├── Shared
+└── Client
+
+Server runtime          Client runtime
+├── Server              ├── Shared
+└── Shared              └── Client
+```
+
+`Shared` is cloned separately into each runtime. Server and client never share mutable object instances merely because content was authored beneath the same root.
 
 ## Client
 
@@ -8,26 +23,28 @@ Somnia projects are always logically split into server and client runtimes. Expo
 
 ```text
 Client executable
-├── invisible integrated server DataModel
-└── client DataModel
+├── invisible integrated server Game
+│   ├── Server
+│   └── Shared
+└── client Game
+    ├── Shared
+    └── Client
 ```
 
-The two runtimes communicate through their separate `NetworkProvider` objects. The default integrated-server path creates paired `LocalTransportEndpoint` objects:
+The two runtimes communicate through their separate `Shared.NetworkProvider` objects. The default integrated-server path creates paired `LocalTransportEndpoint` objects:
 
 ```text
-Server NetworkProvider
-        ↕ LocalTransport packets
-Client NetworkProvider
+Server game.shared.NetworkProvider
+                 ↕ LocalTransport packets
+Client game.shared.NetworkProvider
 ```
-
-This is an in-memory transport, but it preserves the same explicit packet boundary expected from future remote transports. The client and server never share authoritative object instances merely because they are in one executable.
 
 ```python
 client = editor.play()
 server = client.integrated_server
 
-client_network = client.get_provider(NetworkProvider)
-server_network = server.get_provider(NetworkProvider)
+client_network = client.data_model.shared.NetworkProvider
+server_network = server.data_model.shared.NetworkProvider
 
 client_network.send("JoinRequest", {"name": "Player"})
 request = server_network.receive()[0]
@@ -37,39 +54,42 @@ request = server_network.receive()[0]
 
 ## DedicatedServer
 
-`DedicatedServer` contains only the authoritative server package. It omits rendering, input, player UI, client storage, and player scripts.
-
-Typical included providers:
+`DedicatedServer` contains only the authoritative server package:
 
 ```text
-Scene
-Environment
-PhysicsProvider
-ServerScriptProvider
-ServerStorage
-SharedStorage
-PlayerProvider
-NetworkProvider
-HttpProvider
-AnimationProvider
-TimeProvider
-Assets
-NavigationProvider
+Game
+├── Server
+│   ├── PhysicsProvider
+│   ├── ServerScriptProvider
+│   ├── ServerStorage
+│   ├── NavigationProvider
+│   └── Assets
+└── Shared
+    ├── Scene
+    ├── SharedStorage
+    ├── PlayerProvider
+    ├── NetworkProvider
+    ├── HttpProvider
+    ├── AnimationProvider
+    ├── TimeProvider
+    └── Assets
 ```
+
+It has no `Client` root, so client storage, UI, player scripts, input, audio, localization, visual environment data, and client assets cannot leak into the package.
 
 ## DedicatedClient
 
-`DedicatedClient` contains only the client package and never embeds server code. It is intended for games whose authoritative servers are proprietary or separately hosted.
-
-The build system enforces these exclusions:
+`DedicatedClient` contains only:
 
 ```text
-ServerScriptProvider  excluded
-ServerStorage         excluded
-integrated server     absent
+Game
+├── Shared
+└── Client
 ```
 
-A DedicatedClient may contain `ClientStorage`, `PlayerScriptProvider`, `PlayerUIProvider`, rendering assets, input, audio, localization, and client-safe shared content. Its `NetworkProvider` must be attached to a remote transport by the exported game runtime rather than silently creating a local server.
+It never embeds the `Server` root. Server scripts, server storage, authoritative physics configuration, navigation data, and server assets are therefore absent from the generated DataModel.
+
+Its `NetworkProvider` must be attached to a remote transport by the exported runtime rather than silently creating a local server.
 
 ## API
 
@@ -85,13 +105,17 @@ proprietary_client_plan = engine.create_export_plan(
 )
 ```
 
-Each plan contains one or two `RuntimePackage` objects with independently cloned DataModels.
+Each plan contains one or two `RuntimePackage` objects with independently cloned Games.
 
 ```python
 client_package = proprietary_client_plan.package_for("client")
-print(client_package.provider_names())
+print(client_package.root_names())
+# ["Shared", "Client"]
+
+print(client_package.provider_paths())
+# ["Shared.Scene", ..., "Client.InputProvider", ...]
 ```
 
 ## Security boundary
 
-The export partition is a packaging boundary, not merely an execution flag. A DedicatedClient's cloned DataModel does not contain server-only providers or their descendants. Server secrets, private scripts, and proprietary authority logic must be placed under server-only providers so they never enter client output.
+The root partition is a packaging boundary, not merely an execution flag. A DedicatedClient's Game does not contain the `Server` root or any descendant. Secrets, private scripts, authoritative native libraries, and proprietary logic must be placed beneath `Server` so they never enter client output.
