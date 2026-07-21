@@ -49,6 +49,12 @@ from .model import (
     get_provider,
     register_object_class,
 )
+from .networking import (
+    LocalTransportEndpoint,
+    NetworkPacket,
+    TransportEndpoint,
+    create_local_transport_pair,
+)
 from .rendering import NullRenderer, RaylibRenderer, RecordingRaylibBridge
 from .runtime import Engine
 
@@ -68,6 +74,7 @@ __all__ = [
     "HttpProvider",
     "InputProvider",
     "Light",
+    "LocalTransportEndpoint",
     "LocalizationProvider",
     "MeshObject",
     "Model",
@@ -77,6 +84,7 @@ __all__ = [
     "NativeLibrary",
     "NativeLibraryService",
     "NavigationProvider",
+    "NetworkPacket",
     "NetworkProvider",
     "NullRenderer",
     "ObjectRegistry",
@@ -102,10 +110,12 @@ __all__ = [
     "SomniaObject",
     "TimeProvider",
     "Transform",
+    "TransportEndpoint",
     "UnknownModelNode",
     "Vec3",
     "World",
     "create_export_plan",
+    "create_local_transport_pair",
     "get_provider",
     "load_model",
     "register_object_class",
