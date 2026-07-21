@@ -162,6 +162,26 @@ class AssetDatabaseTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             normalize_asset_path("models/../../secret.txt")
 
+    def test_refresh_rejects_symlink_escape(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            project_root = Path(temporary)
+            asset_root = project_root / "assets"
+            asset_root.mkdir()
+            outside = project_root / "outside.txt"
+            outside.write_text("private", encoding="utf-8")
+            link = asset_root / "escape.txt"
+            try:
+                link.symlink_to(outside)
+            except OSError as error:
+                self.skipTest("symbolic links unavailable: " + str(error))
+
+            database = AssetDatabase.from_data_model(
+                Engine(Game()).data_model,
+                project_root=project_root,
+            )
+            with self.assertRaises(ValueError):
+                database.refresh()
+
 
 if __name__ == "__main__":
     unittest.main()
