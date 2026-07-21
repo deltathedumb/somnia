@@ -1,1 +1,1 @@
-Somnia provider/export verification after dynamic class-variable dispatch.
+Somnia provider/export verification after preserved classmethod receiver metadata.
