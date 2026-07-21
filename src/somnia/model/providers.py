@@ -105,6 +105,47 @@ class NetworkProvider(Provider):
         read_only=True,
     )
 
+    def __init__(self, object_id=None, name=None):
+        super().__init__(object_id=object_id, name=name)
+        self._transport = None
+
+    def attach_transport(self, transport):
+        self._transport = transport
+        self._loading = True
+        self.connected = bool(transport is not None and transport.connected)
+        self.transport_backend = (
+            transport.backend_name if transport is not None else "none"
+        )
+        self._loading = False
+        return self
+
+    def send(self, channel, payload=None):
+        from somnia.networking import NetworkPacket
+
+        if self._transport is None or not self._transport.connected:
+            raise ConnectionError("NetworkProvider is not connected")
+        sender = self.parent.realm if isinstance(self.parent, Game) else ""
+        packet = NetworkPacket(channel, payload=payload, sender=sender)
+        self._transport.send(packet)
+        return packet
+
+    def receive(self):
+        if self._transport is None:
+            return []
+        packets = self._transport.receive()
+        self._loading = True
+        self.connected = self._transport.connected
+        self._loading = False
+        return packets
+
+    def close(self):
+        if self._transport is not None:
+            self._transport.close()
+        self._transport = None
+        self._loading = True
+        self.connected = False
+        self._loading = False
+
 
 @register_object_class("somnia.HttpProvider")
 class HttpProvider(Provider):
