@@ -16,15 +16,8 @@ Every client engine frame polls one `InputBackend`. The backend returns an `Inpu
 `Engine.input_frame` retains the most recent frame. The client `InputProvider` mirrors its state and emits `input_began`, `input_changed`, `input_ended`, and `frame_updated` signals.
 
 ```python
-from somnia import (
-    Engine,
-    Game,
-    InputEvent,
-    InputEventType,
-    InputProvider,
-    QueueInputBackend,
-    RuntimeRealm,
-)
+from somnia import Engine, Game, InputProvider, RuntimeRealm
+from somnia.input import InputEvent, InputEventType, QueueInputBackend
 
 backend = QueueInputBackend()
 backend.submit(
@@ -42,7 +35,7 @@ inputs = engine.get_provider(InputProvider)
 assert inputs.is_down("KeyW")
 ```
 
-`NullInputBackend` produces empty frames. `QueueInputBackend` is intended for tests, editor injection, deterministic replays, and compiler parity probes. Native window backends can implement the same `InputBackend` interface later.
+`NullInputBackend` produces empty frames. `QueueInputBackend` is intended for tests, editor injection, deterministic replays, and compiler parity probes. Native window backends can implement the same `InputBackend` interface later. Rich input helpers are imported explicitly from `somnia.input` so unrelated `import somnia` builds retain the smallest compiler graph.
 
 ## Asset records
 
