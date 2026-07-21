@@ -250,8 +250,6 @@ class InputProvider(Provider):
         self.frame_updated = Signal()
 
     def apply_frame(self, frame, backend_name=""):
-        from somnia.input import InputEventType
-
         self._loading = True
         try:
             self.backend_name = str(backend_name or self.backend_name)
@@ -265,9 +263,9 @@ class InputProvider(Provider):
             self._loading = False
 
         for event in frame.events:
-            if event.event_type == InputEventType.BUTTON_DOWN:
+            if event.event_type == "button_down":
                 self.input_began.emit(self, event)
-            elif event.event_type == InputEventType.BUTTON_UP:
+            elif event.event_type == "button_up":
                 self.input_ended.emit(self, event)
             else:
                 self.input_changed.emit(self, event)
