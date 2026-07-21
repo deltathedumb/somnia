@@ -15,6 +15,7 @@ nav:
       - Providers: providers.md
       - Client and server exports: exports.md
       - Editor data model: editor-model.md
+      - Input and assets: input-and-assets.md
       - Foundation status: foundation-status.md
       - Roadmap: roadmap.md
   - Models:
