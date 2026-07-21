@@ -1,1 +1,1 @@
-Somnia provider/export verification after Linux exception ABI shims.
+Somnia provider/export verification after native issubclass lowering.
