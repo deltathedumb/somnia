@@ -1,1 +1,1 @@
-Somnia provider/export verification with comprehension semantic path inspection.
+Somnia provider/export verification after chained receiver typing support.
