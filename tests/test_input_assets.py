@@ -4,17 +4,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from somnia import (
-    AssetKind,
-    Engine,
-    Game,
-    InputEvent,
-    InputEventType,
-    InputProvider,
-    QueueInputBackend,
-    RuntimeRealm,
-)
+from somnia import AssetKind, Engine, Game, InputProvider, RuntimeRealm
 from somnia.assets import AssetDatabase, asset_id_for_path, normalize_asset_path
+from somnia.input import InputEvent, InputEventType, QueueInputBackend
 
 
 class InputFrameTests(unittest.TestCase):
