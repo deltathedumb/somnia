@@ -1,1 +1,1 @@
-Somnia provider/export verification after boolean value-flow typing.
+Somnia provider/export verification with BoolOp assignment-flow tracing.
