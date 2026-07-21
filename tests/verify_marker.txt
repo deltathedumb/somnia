@@ -1,1 +1,1 @@
-Somnia provider/export verification against asmpython beta/3.14.0 after finite class-value lowering.
+Somnia provider/export verification against asmpython beta/3.14.0 after guarded class-value str() support.
