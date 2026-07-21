@@ -51,14 +51,6 @@ from .model import (
     get_provider,
     register_object_class,
 )
-from .input import (
-    InputBackend,
-    InputEvent,
-    InputEventType,
-    InputFrame,
-    NullInputBackend,
-    QueueInputBackend,
-)
 from .networking import (
     LocalTransportEndpoint,
     NetworkPacket,
@@ -84,10 +76,6 @@ __all__ = [
     "Folder",
     "Game",
     "HttpProvider",
-    "InputBackend",
-    "InputEvent",
-    "InputEventType",
-    "InputFrame",
     "InputProvider",
     "Light",
     "LocalTransportEndpoint",
@@ -102,7 +90,6 @@ __all__ = [
     "NavigationProvider",
     "NetworkPacket",
     "NetworkProvider",
-    "NullInputBackend",
     "NullRenderer",
     "ObjectRegistry",
     "PhysicsProvider",
@@ -114,7 +101,6 @@ __all__ = [
     "Provider",
     "PythonScript",
     "Quaternion",
-    "QueueInputBackend",
     "RaylibRenderer",
     "RecordingRaylibBridge",
     "RenderService",
