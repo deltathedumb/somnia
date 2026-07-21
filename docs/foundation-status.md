@@ -19,7 +19,7 @@
 - Null and queued input backends for headless runs, tests, editor injection, and replays
 - InputProvider state snapshots and transition signals
 - Serializable Asset records inside the canonical Assets provider
-- Deterministic source-asset discovery, hashing, kind inference, and stale-record removal
+- Deterministic source-asset discovery, hashing, kind inference, stale-record removal, and symlink-aware root containment
 - NativeLibrary and NativeFunction objects
 - Static asmpython binding generation from native declarations
 - Generated typed raylib bridge adapter for asmpython
@@ -31,6 +31,7 @@
 - Standard `src/somnia` package layout
 - Strictly built HTML documentation
 - GitHub Wiki generated from the canonical `docs/` sources
+- Pull-request workflow concurrency that cancels superseded CI and documentation runs
 
 ## Verification status
 
@@ -52,7 +53,7 @@ The strict MkDocs HTML build and Wiki synchronization use the same canonical doc
 
 Somnia keeps its public package at `src/somnia` and places temporary compiler entries directly inside `src/` during differential runs. This works around asmpython's current package-root discovery limitation without changing Somnia's public API.
 
-The expanded provider/export snapshot currently remains a compiler diagnostic target. Native parity is blocked by asmpython lowering of finite tuples containing class values; Somnia CI preserves the unchanged CPython reference output and uploads the compiler audits and native diagnostics. This compiler-side issue does not block CPython engine development.
+The expanded provider/export snapshot remains a native diagnostic target. The latest verified input-independent baseline passes whole-program import analysis and compiles successfully, but the generated executable segfaults inside asmpython's generated dictionary runtime before producing the reference snapshot. Somnia CI preserves the unchanged CPython output and uploads compiler audits, native diagnostics, and the failing executable trace. Optional input replay/serialization and filesystem asset tooling are kept outside the core import graph so they do not widen this known compiler-runtime gap.
 
 ## Deliberately not implemented yet
 
