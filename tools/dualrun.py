@@ -52,9 +52,19 @@ def show_native_backtrace(executable, *, cwd, env):
             "-ex",
             "set pagination off",
             "-ex",
+            "set disassembly-flavor intel",
+            "-ex",
             "run",
             "-ex",
             "thread apply all bt full",
+            "-ex",
+            "info registers",
+            "-ex",
+            "info proc mappings",
+            "-ex",
+            "x/48i $pc-64",
+            "-ex",
+            "x/24gx $rsp",
             "--args",
             str(executable),
         ],
@@ -62,6 +72,18 @@ def show_native_backtrace(executable, *, cwd, env):
         env=env,
     )
     show_process("native gdb", traced)
+
+    for tool, arguments in (
+        ("readelf", ["-h", "-S", "-l", str(executable)]),
+        ("nm", ["-n", str(executable)]),
+    ):
+        program = shutil.which(tool)
+        if program is None:
+            continue
+        show_process(
+            "native " + tool,
+            run([program, *arguments], cwd=cwd, env=env),
+        )
 
 
 def make_compiler_entry(script, source_root):
