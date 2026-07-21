@@ -20,6 +20,7 @@ from .document import ModelDocument
 from .provider import Game, Provider, RuntimeRealm
 
 # Import built-in object classes for registration side effects.
+from .assets import Asset, AssetKind
 from .native import NativeFunction, NativeLibrary, NativeLibraryService
 from .scene import Camera, Environment, Light, MeshObject, RenderService, Scene, World
 from .scripting import PortaPyRuntime, PythonScript, ScriptService
@@ -49,6 +50,8 @@ from .providers import (
 
 __all__ = [
     "AnimationProvider",
+    "Asset",
+    "AssetKind",
     "Assets",
     "AudioProvider",
     "Camera",
