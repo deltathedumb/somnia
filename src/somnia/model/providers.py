@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from somnia.math import Vec3
 
-from .core import DataModel, Property, register_object_class
+from .core import DataModel, Property, Signal, register_object_class
 from .provider import Game, Provider, RuntimeRealm
 from .scene import Environment, Scene
 
@@ -192,6 +192,93 @@ class InputProvider(Provider):
     runtime_realms = (RuntimeRealm.CLIENT,)
 
     mouse_sensitivity = Property(1.0, value_type=float, category="Input", minimum=0.0)
+    backend_name = Property(
+        "null",
+        value_type=str,
+        serializable=False,
+        category="Input State",
+        read_only=True,
+    )
+    frame_number = Property(
+        0,
+        value_type=int,
+        serializable=False,
+        category="Input State",
+        read_only=True,
+    )
+    held_inputs = Property(
+        [],
+        value_type=list,
+        serializable=False,
+        category="Input State",
+        read_only=True,
+    )
+    axes = Property(
+        {},
+        value_type=dict,
+        serializable=False,
+        category="Input State",
+        read_only=True,
+    )
+    pointer = Property(
+        [],
+        value_type=list,
+        serializable=False,
+        category="Input State",
+        read_only=True,
+    )
+    wheel_delta = Property(
+        0.0,
+        value_type=float,
+        serializable=False,
+        category="Input State",
+        read_only=True,
+    )
+    text_input = Property(
+        "",
+        value_type=str,
+        serializable=False,
+        category="Input State",
+        read_only=True,
+    )
+
+    def __init__(self, object_id=None, name=None):
+        super().__init__(object_id=object_id, name=name)
+        self.input_began = Signal()
+        self.input_changed = Signal()
+        self.input_ended = Signal()
+        self.frame_updated = Signal()
+
+    def apply_frame(self, frame, backend_name=""):
+        from somnia.input import InputEventType
+
+        self._loading = True
+        try:
+            self.backend_name = str(backend_name or self.backend_name)
+            self.frame_number = frame.frame_number
+            self.held_inputs = list(frame.held_inputs)
+            self.axes = dict(frame.axes)
+            self.pointer = list(frame.pointer)
+            self.wheel_delta = frame.wheel_delta
+            self.text_input = frame.text
+        finally:
+            self._loading = False
+
+        for event in frame.events:
+            if event.event_type == InputEventType.BUTTON_DOWN:
+                self.input_began.emit(self, event)
+            elif event.event_type == InputEventType.BUTTON_UP:
+                self.input_ended.emit(self, event)
+            else:
+                self.input_changed.emit(self, event)
+        self.frame_updated.emit(self, frame)
+        return frame
+
+    def is_down(self, code):
+        return str(code) in self.held_inputs
+
+    def axis(self, code, default=0.0):
+        return float(self.axes.get(str(code), default))
 
 
 @register_object_class("somnia.TimeProvider")
@@ -212,6 +299,22 @@ class Assets(ContainerProvider):
     runtime_realms = (RuntimeRealm.SERVER, RuntimeRealm.CLIENT)
 
     root_path = Property("assets", value_type=str, category="Assets")
+
+    def asset_records(self):
+        from .assets import Asset
+
+        return [
+            obj
+            for obj in self.walk(include_self=False)
+            if isinstance(obj, Asset)
+        ]
+
+    def find_asset(self, asset_id_or_path):
+        requested = str(asset_id_or_path).replace("\\", "/")
+        for asset in self.asset_records():
+            if requested in (asset.asset_id, asset.object_id, asset.source_path):
+                return asset
+        return None
 
 
 @register_object_class("somnia.NavigationProvider")
