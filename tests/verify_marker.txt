@@ -1,1 +1,1 @@
-Somnia provider/export verification with direct walk iterator selection tracing.
+Somnia provider/export verification with comprehension semantic path inspection.
