@@ -79,6 +79,8 @@ def _pointer_value(value):
     if value is None:
         return []
     values = list(value)
+    if not values:
+        return []
     if len(values) != 2:
         raise ValueError("pointer positions require exactly two values")
     return [float(values[0]), float(values[1])]
@@ -167,7 +169,9 @@ class QueueInputBackend(InputBackend):
             if isinstance(frame, InputFrame):
                 self.submit_frame(frame)
             elif isinstance(frame, dict):
-                self.submit(**frame)
+                payload = dict(frame)
+                payload.pop("frame_number", None)
+                self.submit(**payload)
             else:
                 raise TypeError("queued input frames must be InputFrame objects or dictionaries")
 
