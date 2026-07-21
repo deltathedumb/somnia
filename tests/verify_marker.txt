@@ -1,1 +1,1 @@
-Somnia provider/export verification after merged chained receiver signature preloading.
+Somnia provider/export verification with chained receiver error-order tracing.
