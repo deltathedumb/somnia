@@ -5,7 +5,7 @@ from __future__ import annotations
 from somnia.math import Vec3
 
 from .core import DataModel, Property, Signal, register_object_class
-from .provider import Game, Provider, RuntimeRealm
+from .provider import Game, Provider, RealmKey, RuntimeRealm
 from .scene import Environment, Scene
 
 
@@ -29,7 +29,9 @@ class PhysicsProvider(Provider):
     provider_key = "PhysicsProvider"
     fixed_name = "PhysicsProvider"
     hidden_by_default = True
-    runtime_realms = (RuntimeRealm.SERVER, RuntimeRealm.CLIENT)
+    runtime_realms = (RuntimeRealm.SERVER,)
+    root_keys = (RealmKey.SERVER,)
+    default_root_key = RealmKey.SERVER
 
     gravity = Property(Vec3(0.0, -9.81, 0.0), value_type=Vec3, category="Physics")
     solver_substeps = Property(1, value_type=int, category="Physics", minimum=1)
@@ -41,6 +43,8 @@ class ServerScriptProvider(ScriptContainerProvider):
     provider_key = "ServerScriptProvider"
     fixed_name = "ServerScriptProvider"
     runtime_realms = (RuntimeRealm.SERVER,)
+    root_keys = (RealmKey.SERVER,)
+    default_root_key = RealmKey.SERVER
 
 
 @register_object_class("somnia.ServerStorage")
@@ -48,6 +52,8 @@ class ServerStorage(ContainerProvider):
     provider_key = "ServerStorage"
     fixed_name = "ServerStorage"
     runtime_realms = (RuntimeRealm.SERVER,)
+    root_keys = (RealmKey.SERVER,)
+    default_root_key = RealmKey.SERVER
 
 
 @register_object_class("somnia.SharedStorage")
@@ -55,6 +61,8 @@ class SharedStorage(ContainerProvider):
     provider_key = "SharedStorage"
     fixed_name = "SharedStorage"
     runtime_realms = (RuntimeRealm.SERVER, RuntimeRealm.CLIENT)
+    root_keys = (RealmKey.SHARED,)
+    default_root_key = RealmKey.SHARED
 
 
 @register_object_class("somnia.ClientStorage")
@@ -62,6 +70,8 @@ class ClientStorage(ContainerProvider):
     provider_key = "ClientStorage"
     fixed_name = "ClientStorage"
     runtime_realms = (RuntimeRealm.CLIENT,)
+    root_keys = (RealmKey.CLIENT,)
+    default_root_key = RealmKey.CLIENT
 
 
 @register_object_class("somnia.PlayerProvider")
@@ -69,6 +79,8 @@ class PlayerProvider(ContainerProvider):
     provider_key = "PlayerProvider"
     fixed_name = "PlayerProvider"
     runtime_realms = (RuntimeRealm.SERVER, RuntimeRealm.CLIENT)
+    root_keys = (RealmKey.SHARED,)
+    default_root_key = RealmKey.SHARED
 
     maximum_players = Property(1, value_type=int, category="Players", minimum=1)
     local_player_id = Property("", value_type=str, category="Players")
@@ -79,6 +91,8 @@ class PlayerScriptProvider(ScriptContainerProvider):
     provider_key = "PlayerScriptProvider"
     fixed_name = "PlayerScriptProvider"
     runtime_realms = (RuntimeRealm.CLIENT,)
+    root_keys = (RealmKey.CLIENT,)
+    default_root_key = RealmKey.CLIENT
 
 
 @register_object_class("somnia.PlayerUIProvider")
@@ -86,6 +100,8 @@ class PlayerUIProvider(ContainerProvider):
     provider_key = "PlayerUIProvider"
     fixed_name = "PlayerUIProvider"
     runtime_realms = (RuntimeRealm.CLIENT,)
+    root_keys = (RealmKey.CLIENT,)
+    default_root_key = RealmKey.CLIENT
 
 
 @register_object_class("somnia.NetworkProvider")
@@ -94,6 +110,8 @@ class NetworkProvider(Provider):
     fixed_name = "NetworkProvider"
     hidden_by_default = True
     runtime_realms = (RuntimeRealm.SERVER, RuntimeRealm.CLIENT)
+    root_keys = (RealmKey.SHARED,)
+    default_root_key = RealmKey.SHARED
 
     transport_backend = Property("local", value_type=str, category="Networking")
     remote_endpoint = Property("", value_type=str, category="Networking")
@@ -124,7 +142,8 @@ class NetworkProvider(Provider):
 
         if self._transport is None or not self._transport.connected:
             raise ConnectionError("NetworkProvider is not connected")
-        sender = self.parent.realm if isinstance(self.parent, Game) else ""
+        game = self.game
+        sender = game.realm if game is not None else ""
         packet = NetworkPacket(channel, payload=payload, sender=sender)
         self._transport.send(packet)
         return packet
@@ -153,6 +172,8 @@ class HttpProvider(Provider):
     fixed_name = "HttpProvider"
     hidden_by_default = True
     runtime_realms = (RuntimeRealm.SERVER, RuntimeRealm.CLIENT)
+    root_keys = (RealmKey.SHARED,)
+    default_root_key = RealmKey.SHARED
 
     requests_enabled = Property(False, value_type=bool, category="HTTP")
     user_agent = Property("SomniaEngine", value_type=str, category="HTTP")
@@ -164,6 +185,8 @@ class AnimationProvider(Provider):
     fixed_name = "AnimationProvider"
     hidden_by_default = True
     runtime_realms = (RuntimeRealm.SERVER, RuntimeRealm.CLIENT)
+    root_keys = (RealmKey.SHARED,)
+    default_root_key = RealmKey.SHARED
 
     default_frame_rate = Property(60.0, value_type=float, category="Animation", minimum=1.0)
 
@@ -174,6 +197,8 @@ class AudioProvider(Provider):
     fixed_name = "AudioProvider"
     hidden_by_default = True
     runtime_realms = (RuntimeRealm.CLIENT,)
+    root_keys = (RealmKey.CLIENT,)
+    default_root_key = RealmKey.CLIENT
 
     master_volume = Property(
         1.0,
@@ -190,6 +215,8 @@ class InputProvider(Provider):
     fixed_name = "InputProvider"
     hidden_by_default = True
     runtime_realms = (RuntimeRealm.CLIENT,)
+    root_keys = (RealmKey.CLIENT,)
+    default_root_key = RealmKey.CLIENT
 
     mouse_sensitivity = Property(1.0, value_type=float, category="Input", minimum=0.0)
     backend_name = Property(
@@ -285,6 +312,8 @@ class TimeProvider(Provider):
     fixed_name = "TimeProvider"
     hidden_by_default = True
     runtime_realms = (RuntimeRealm.SERVER, RuntimeRealm.CLIENT)
+    root_keys = (RealmKey.SHARED,)
+    default_root_key = RealmKey.SHARED
 
     time_scale = Property(1.0, value_type=float, category="Time", minimum=0.0)
     fixed_rate = Property(60.0, value_type=float, category="Time", minimum=1.0)
@@ -295,8 +324,17 @@ class Assets(ContainerProvider):
     provider_key = "Assets"
     fixed_name = "Assets"
     runtime_realms = (RuntimeRealm.SERVER, RuntimeRealm.CLIENT)
+    root_keys = (RealmKey.SERVER, RealmKey.SHARED, RealmKey.CLIENT)
+    default_root_key = RealmKey.SHARED
 
-    root_path = Property("assets", value_type=str, category="Assets")
+    root_path = Property("assets/shared", value_type=str, category="Assets", read_only=True)
+
+    def on_attached_to_root(self, root):
+        self._loading = True
+        try:
+            self.root_path = "assets/" + root.realm_key
+        finally:
+            self._loading = False
 
     def asset_records(self):
         from .assets import Asset
@@ -321,6 +359,8 @@ class NavigationProvider(Provider):
     fixed_name = "NavigationProvider"
     hidden_by_default = True
     runtime_realms = (RuntimeRealm.SERVER,)
+    root_keys = (RealmKey.SERVER,)
+    default_root_key = RealmKey.SERVER
 
     agent_radius = Property(0.5, value_type=float, category="Navigation", minimum=0.0)
     agent_height = Property(2.0, value_type=float, category="Navigation", minimum=0.0)
@@ -332,6 +372,8 @@ class LocalizationProvider(Provider):
     fixed_name = "LocalizationProvider"
     hidden_by_default = True
     runtime_realms = (RuntimeRealm.CLIENT,)
+    root_keys = (RealmKey.CLIENT,)
+    default_root_key = RealmKey.CLIENT
 
     default_locale = Property("en-US", value_type=str, category="Localization")
 
@@ -371,6 +413,39 @@ def canonical_provider_types():
     return _CANONICAL_PROVIDER_TYPES
 
 
+def canonical_provider_types_for_root(realm_key):
+    normalized = RealmKey.normalize(realm_key)
+    if normalized == RealmKey.SERVER:
+        return (
+            PhysicsProvider,
+            ServerScriptProvider,
+            ServerStorage,
+            NavigationProvider,
+            Assets,
+        )
+    if normalized == RealmKey.SHARED:
+        return (
+            Scene,
+            SharedStorage,
+            PlayerProvider,
+            NetworkProvider,
+            HttpProvider,
+            AnimationProvider,
+            TimeProvider,
+            Assets,
+        )
+    return (
+        Environment,
+        ClientStorage,
+        PlayerScriptProvider,
+        PlayerUIProvider,
+        AudioProvider,
+        InputProvider,
+        LocalizationProvider,
+        Assets,
+    )
+
+
 def resolve_provider_type(provider_type_or_name):
     if isinstance(provider_type_or_name, type) and issubclass(provider_type_or_name, Provider):
         return provider_type_or_name
@@ -387,28 +462,23 @@ def resolve_provider_type(provider_type_or_name):
     raise KeyError("unknown Somnia provider: " + requested)
 
 
-def get_provider(data_model, provider_type_or_name, create=True):
+def get_provider(data_model, provider_type_or_name, create=True, realm=None):
     provider_type = resolve_provider_type(provider_type_or_name)
     if isinstance(data_model, Game):
-        return data_model.get_provider(provider_type, create=create)
-    for child in data_model.children:
-        if isinstance(child, provider_type):
-            return child
-    if not create:
-        return None
-    provider = provider_type()
-    data_model.add_child(provider)
-    return provider
+        return data_model.get_provider(provider_type, create=create, realm=realm)
+    for obj in data_model.walk(include_self=False):
+        if isinstance(obj, provider_type):
+            return obj
+    if create:
+        raise TypeError("canonical providers require a somnia.Game root")
+    return None
 
 
 def install_canonical_providers(data_model, realm=RuntimeRealm.PROJECT):
     normalized = RuntimeRealm.normalize(realm)
-    if isinstance(data_model, Game):
-        data_model.realm = normalized
-        return data_model.install_default_providers()
-    if not isinstance(data_model, DataModel):
-        raise TypeError("providers require a DataModel root")
-    for provider_type in _CANONICAL_PROVIDER_TYPES:
-        if provider_type.supports_realm(normalized):
-            get_provider(data_model, provider_type, create=True)
-    return data_model
+    if not isinstance(data_model, Game):
+        if not isinstance(data_model, DataModel):
+            raise TypeError("providers require a DataModel root")
+        raise TypeError("canonical providers require a somnia.Game root")
+    data_model.realm = normalized
+    return data_model.install_default_providers()
