@@ -1,4 +1,4 @@
-"""Deterministic source-asset discovery and indexing."""
+"""Deterministic realm-specific source-asset discovery and indexing."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import hashlib
 from pathlib import Path
 
 from somnia.model.assets import Asset, AssetKind
+from somnia.model.provider import RealmKey
 from somnia.model.providers import Assets, get_provider
 
 
@@ -49,9 +50,12 @@ def normalize_asset_path(value):
     return "/".join(parts)
 
 
-def asset_id_for_path(relative_path):
+def asset_id_for_path(relative_path, realm=None):
     normalized = normalize_asset_path(relative_path)
-    digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+    identity = normalized
+    if realm is not None:
+        identity = RealmKey.normalize(realm) + ":" + normalized
+    digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()
     return digest[:24]
 
 
@@ -92,17 +96,26 @@ class AssetRefreshResult:
 
 
 class AssetDatabase:
-    """Synchronize an :class:`Assets` provider with files on disk."""
+    """Synchronize one realm's :class:`Assets` provider with files on disk."""
 
     def __init__(self, provider, project_root="."):
         if not isinstance(provider, Assets):
             raise TypeError("AssetDatabase requires a somnia.Assets provider")
+        if provider.realm_root is None:
+            raise ValueError("Assets must be attached beneath Server, Shared, or Client")
         self.provider = provider
         self.project_root = Path(project_root).resolve()
 
     @classmethod
-    def from_data_model(cls, data_model, project_root="."):
-        return cls(get_provider(data_model, Assets), project_root=project_root)
+    def from_data_model(cls, data_model, project_root=".", realm=RealmKey.SHARED):
+        return cls(
+            get_provider(data_model, Assets, realm=realm),
+            project_root=project_root,
+        )
+
+    @property
+    def realm_key(self):
+        return self.provider.realm_root.realm_key
 
     @property
     def source_root(self):
@@ -139,7 +152,7 @@ class AssetDatabase:
             )
             path = self.source_path(relative_path)
             seen.add(relative_path)
-            asset_id = asset_id_for_path(relative_path)
+            asset_id = asset_id_for_path(relative_path, realm=self.realm_key)
             content_hash = hash_file(path)
             stat = path.stat()
             kind = infer_asset_kind(relative_path)
@@ -147,7 +160,7 @@ class AssetDatabase:
 
             if asset is None:
                 asset = Asset(
-                    object_id="asset:" + asset_id,
+                    object_id="asset:" + self.realm_key + ":" + asset_id,
                     name=Path(relative_path).name,
                 )
                 self.provider.add_child(asset)
