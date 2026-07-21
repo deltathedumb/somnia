@@ -12,7 +12,28 @@ Client executable
 └── client DataModel
 ```
 
-The two runtimes are intended to communicate through `NetworkProvider`, even when the transport is an in-memory local connection. This is the default for standalone single-player games and can also support listen-server games.
+The two runtimes communicate through their separate `NetworkProvider` objects. The default integrated-server path creates paired `LocalTransportEndpoint` objects:
+
+```text
+Server NetworkProvider
+        ↕ LocalTransport packets
+Client NetworkProvider
+```
+
+This is an in-memory transport, but it preserves the same explicit packet boundary expected from future remote transports. The client and server never share authoritative object instances merely because they are in one executable.
+
+```python
+client = editor.play()
+server = client.integrated_server
+
+client_network = client.get_provider(NetworkProvider)
+server_network = server.get_provider(NetworkProvider)
+
+client_network.send("JoinRequest", {"name": "Player"})
+request = server_network.receive()[0]
+```
+
+`Client` is the default for standalone single-player games and can later support listen-server multiplayer.
 
 ## DedicatedServer
 
@@ -48,7 +69,7 @@ ServerStorage         excluded
 integrated server     absent
 ```
 
-A DedicatedClient may contain `ClientStorage`, `PlayerScriptProvider`, `PlayerUIProvider`, rendering assets, input, audio, localization, and client-safe shared content.
+A DedicatedClient may contain `ClientStorage`, `PlayerScriptProvider`, `PlayerUIProvider`, rendering assets, input, audio, localization, and client-safe shared content. Its `NetworkProvider` must be attached to a remote transport by the exported game runtime rather than silently creating a local server.
 
 ## API
 
