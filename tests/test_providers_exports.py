@@ -38,14 +38,12 @@ class ProviderAndExportTests(unittest.TestCase):
         engine = Engine(Game())
         game = engine.data_model
 
-        expected_unique = [
+        expected_unique = {
             provider_type.provider_key for provider_type in canonical_provider_types()
-        ]
-        actual_unique = []
-        for provider in game.providers():
-            if provider.provider_key not in actual_unique:
-                actual_unique.append(provider.provider_key)
+        }
+        actual_unique = {provider.provider_key for provider in game.providers()}
         self.assertEqual(actual_unique, expected_unique)
+        self.assertEqual(len(actual_unique), 19)
 
         self.assertEqual(
             [provider.provider_key for provider in game.server.providers()],
