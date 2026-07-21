@@ -2,9 +2,18 @@ from __future__ import annotations
 
 import unittest
 
-from somnia import Camera, MeshObject, NativeFunction, NativeLibrary, PortaPyRuntime, PythonScript, World
+from somnia import (
+    Camera,
+    Engine,
+    MeshObject,
+    NativeFunction,
+    NativeLibrary,
+    PortaPyRuntime,
+    PythonScript,
+    ServerScriptProvider,
+    World,
+)
 from somnia.math import Transform, Vec3
-from somnia.runtime import Engine
 from somnia.scripting import CPythonReferenceBackend, ScriptHost
 
 
@@ -60,6 +69,30 @@ class RuntimeFoundationTests(unittest.TestCase):
         self.assertTrue(runtime.runtime_created)
         host.stop()
         self.assertFalse(runtime.runtime_created)
+
+    def test_scripts_access_providers_through_game_realm_roots(self) -> None:
+        engine = Engine()
+        server_scripts = engine.get_provider(ServerScriptProvider)
+        runtime = PortaPyRuntime(object_id="portapy-script-api", name="PortaPy")
+        script = PythonScript(object_id="hierarchy-script", name="Hierarchy")
+        script.execution_context = "server"
+        script.source = (
+            "server = game.server\n"
+            "physics_provider = server.PhysicsProvider\n"
+            'somnia["physics_id"] = physics_provider.object_id\n'
+        )
+        runtime.add_child(script)
+        server_scripts.add_child(runtime)
+
+        host_api = {}
+        host = ScriptHost(runtime, CPythonReferenceBackend(), host_api)
+        engine.attach_script_host(host)
+        results = engine.start_scripts(context="server")
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(host_api["physics_id"], "provider:server:PhysicsProvider")
+        self.assertIs(host.resolve_game(), engine.data_model)
+        engine.shutdown()
 
 
 if __name__ == "__main__":
