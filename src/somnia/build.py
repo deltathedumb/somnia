@@ -1,9 +1,9 @@
-"""Client/server export planning derived from fixed realm roots."""
+"""Export planning derived from Somnia's fixed Server, Shared, and Client roots."""
 
 from __future__ import annotations
 
 from .model.core import OBJECT_TYPES
-from .model.provider import Game, Provider, RealmRoot, RuntimeRealm
+from .model.provider import Game, Provider, RealmKey, RealmRoot, RuntimeRealm
 
 
 class ExportType:
@@ -43,10 +43,9 @@ class RuntimePackage:
 
 
 class ExportPlan:
-    def __init__(self, export_type, packages, integrated_server=False):
+    def __init__(self, export_type, packages):
         self.export_type = ExportType.normalize(export_type)
         self.packages = list(packages)
-        self.integrated_server = bool(integrated_server)
 
     def package_for(self, realm):
         normalized = RuntimeRealm.normalize(realm)
@@ -60,26 +59,31 @@ class ExportPlan:
         client_package = self.package_for(RuntimeRealm.CLIENT)
 
         if self.export_type == ExportType.CLIENT:
-            if server_package is None or client_package is None:
-                raise ValueError("Client exports require integrated server and client packages")
-            if not self.integrated_server:
-                raise ValueError("Client exports must mark the server as integrated")
-        elif self.export_type == ExportType.DEDICATED_SERVER:
-            if server_package is None or client_package is not None:
-                raise ValueError("DedicatedServer exports must contain only a server package")
+            if client_package is None or server_package is not None:
+                raise ValueError("Client exports must contain only a client package")
+            expected_roots = ["Shared", "Client"]
+            if client_package.root_names() != expected_roots:
+                raise ValueError("Client exports must contain Shared and Client roots")
         elif self.export_type == ExportType.DEDICATED_CLIENT:
             if client_package is None or server_package is not None:
                 raise ValueError("DedicatedClient exports must contain only a client package")
-            if self.integrated_server:
-                raise ValueError("DedicatedClient exports cannot contain an integrated server")
-
-        if server_package is not None:
+            if client_package.root_names() != ["Client"]:
+                raise ValueError("DedicatedClient exports must contain only the Client root")
+        elif self.export_type == ExportType.DEDICATED_SERVER:
+            if server_package is None or client_package is not None:
+                raise ValueError("DedicatedServer exports must contain only a server package")
             if server_package.root_names() != ["Server", "Shared"]:
-                raise ValueError("server packages must contain only Server and Shared roots")
+                raise ValueError(
+                    "DedicatedServer exports must contain Server and Shared roots"
+                )
+
         if client_package is not None:
-            if client_package.root_names() != ["Shared", "Client"]:
-                raise ValueError("client packages must contain only Shared and Client roots")
-            forbidden = {"ServerScriptProvider", "ServerStorage", "PhysicsProvider"}
+            forbidden = {
+                "ServerScriptProvider",
+                "ServerStorage",
+                "PhysicsProvider",
+                "NavigationProvider",
+            }
             leaked = forbidden.intersection(client_package.provider_names())
             if leaked:
                 raise ValueError(
@@ -92,7 +96,6 @@ class ExportPlan:
         self.validate()
         return {
             "export_type": self.export_type,
-            "integrated_server": self.integrated_server,
             "packages": [
                 {
                     "realm": package.realm,
@@ -117,8 +120,9 @@ def _clone_object(source):
     return clone
 
 
-def clone_game_for_realm(source_game, realm):
+def clone_game_for_roots(source_game, realm, root_keys):
     normalized = RuntimeRealm.normalize(realm)
+    requested_roots = [RealmKey.normalize(root_key) for root_key in root_keys]
     result = Game(name=source_game.name, realm=normalized)
     result.tags = list(source_game.tags)
     result.extensions = dict(source_game.extensions)
@@ -133,37 +137,62 @@ def clone_game_for_realm(source_game, realm):
             clone_tree(child, clone)
         return clone
 
-    for child in source_game.children:
-        if not isinstance(child, RealmRoot):
-            continue
-        if not child.supports_runtime(normalized):
-            continue
-        clone_tree(child, result)
+    for root_key in requested_roots:
+        root = source_game.get_realm_root(root_key, create=False)
+        if root is not None:
+            clone_tree(root, result)
     return result
+
+
+def clone_game_for_realm(source_game, realm):
+    """Compatibility helper for the normal server/client runtime partitions."""
+    normalized = RuntimeRealm.normalize(realm)
+    if normalized == RuntimeRealm.SERVER:
+        root_keys = (RealmKey.SERVER, RealmKey.SHARED)
+    elif normalized == RuntimeRealm.CLIENT:
+        root_keys = (RealmKey.SHARED, RealmKey.CLIENT)
+    else:
+        raise ValueError("runtime export clones require server or client realm")
+    return clone_game_for_roots(source_game, normalized, root_keys)
 
 
 def create_export_plan(source_game, export_type):
     normalized = ExportType.normalize(export_type)
-    packages = []
-    integrated_server = False
 
-    if normalized in (ExportType.CLIENT, ExportType.DEDICATED_SERVER):
-        packages.append(
-            RuntimePackage(
-                RuntimeRealm.SERVER,
-                clone_game_for_realm(source_game, RuntimeRealm.SERVER),
-            )
-        )
-    if normalized in (ExportType.CLIENT, ExportType.DEDICATED_CLIENT):
-        packages.append(
+    if normalized == ExportType.CLIENT:
+        packages = [
             RuntimePackage(
                 RuntimeRealm.CLIENT,
-                clone_game_for_realm(source_game, RuntimeRealm.CLIENT),
+                clone_game_for_roots(
+                    source_game,
+                    RuntimeRealm.CLIENT,
+                    (RealmKey.SHARED, RealmKey.CLIENT),
+                ),
             )
-        )
-    if normalized == ExportType.CLIENT:
-        integrated_server = True
+        ]
+    elif normalized == ExportType.DEDICATED_CLIENT:
+        packages = [
+            RuntimePackage(
+                RuntimeRealm.CLIENT,
+                clone_game_for_roots(
+                    source_game,
+                    RuntimeRealm.CLIENT,
+                    (RealmKey.CLIENT,),
+                ),
+            )
+        ]
+    else:
+        packages = [
+            RuntimePackage(
+                RuntimeRealm.SERVER,
+                clone_game_for_roots(
+                    source_game,
+                    RuntimeRealm.SERVER,
+                    (RealmKey.SERVER, RealmKey.SHARED),
+                ),
+            )
+        ]
 
-    plan = ExportPlan(normalized, packages, integrated_server=integrated_server)
+    plan = ExportPlan(normalized, packages)
     plan.validate()
     return plan
