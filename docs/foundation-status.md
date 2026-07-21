@@ -12,8 +12,8 @@
 - Canonical providers grouped beneath their packaging realm
 - Hierarchical scripting access such as `game.server.PhysicsProvider`
 - Automatic migration of legacy flat top-level providers into canonical roots
-- Client, DedicatedServer, and DedicatedClient export plans based on complete root cloning
-- Separate integrated client/server DataModels with local packet transport
+- Exact export root contracts: Client=`Shared + Client`, DedicatedClient=`Client`, DedicatedServer=`Server + Shared`
+- Runtime preservation of explicitly packaged root sets
 - World, camera, mesh, light, and render service objects
 - Backend-neutral rendering contract and null renderer
 - Raylib renderer backed by a flat Somnia-owned C bridge ABI
@@ -48,7 +48,8 @@ The CPython reference suite covers:
 - the deterministic scene/render snapshot,
 - generated raylib adapter tests,
 - fixed realm-root hierarchy and script access,
-- root-based provider/export partitioning and local transport,
+- exact export root combinations,
+- preservation of a DedicatedClient's Client-only root set,
 - legacy flat-provider migration,
 - deterministic input state and signals,
 - realm-specific immutable asset add/update/remove behavior and path containment.

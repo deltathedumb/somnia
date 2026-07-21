@@ -1,4 +1,4 @@
-"""Somnia engine host built around provider-based client/server DataModels."""
+"""Somnia engine host built around provider-based runtime DataModels."""
 
 from __future__ import annotations
 
@@ -13,16 +13,15 @@ from somnia.model import (
     get_provider,
     install_canonical_providers,
 )
-from somnia.networking import create_local_transport_pair
 from somnia.rendering import NullRenderer
 
 
 class Engine:
     """Coordinate one logical Somnia runtime realm.
 
-    A normal Client play/export creates a client Engine plus an invisible
-    integrated server Engine. Both runtimes retain separate DataModels and
-    communicate through NetworkProvider rather than shared object references.
+    Runtime packages preserve the exact root set selected by their export type.
+    A normal Client contains Shared and Client; a DedicatedClient contains only
+    Client; a DedicatedServer contains Server and Shared.
     """
 
     def __init__(
@@ -37,6 +36,11 @@ class Engine:
             data_model = Game(realm=normalized_realm)
         self.data_model = data_model
         self.realm = normalized_realm
+        packaged_roots = (
+            isinstance(self.data_model, Game)
+            and normalized_realm in (RuntimeRealm.SERVER, RuntimeRealm.CLIENT)
+            and bool(self.data_model.realm_roots())
+        )
         if isinstance(self.data_model, Game):
             self.data_model.realm = normalized_realm
         self.renderer = renderer or NullRenderer()
@@ -46,8 +50,8 @@ class Engine:
         self.script_hosts = []
         self.frame_number = 0
         self.delta_time = 0.0
-        self.integrated_server = None
-        self.install_foundation_services()
+        if not packaged_roots:
+            self.install_foundation_services()
 
     def install_foundation_services(self):
         install_canonical_providers(self.data_model, realm=self.realm)
@@ -132,10 +136,6 @@ class Engine:
         self.input_backend.shutdown()
         self.renderer.shutdown()
         self.initialized = False
-        if self.integrated_server is not None:
-            server = self.integrated_server
-            self.integrated_server = None
-            server.shutdown()
 
     def create_export_plan(self, export_type):
         if not isinstance(self.data_model, Game):
@@ -143,32 +143,12 @@ class Engine:
         return create_export_plan(self.data_model, export_type)
 
     def clone_for_play(self):
-        """Create a Client play session with a separate invisible local server.
-
-        The returned value is the client Engine for backward compatibility. Its
-        ``integrated_server`` attribute contains the authoritative server Engine.
-        Both NetworkProviders communicate through paired in-memory endpoints that
-        preserve the same packet boundary expected from future remote transports.
-        """
+        """Create the normal Client play package containing Shared and Client."""
         plan = self.create_export_plan(ExportType.CLIENT)
-        server_package = plan.package_for(RuntimeRealm.SERVER)
         client_package = plan.package_for(RuntimeRealm.CLIENT)
-
-        server_engine = Engine(
-            data_model=server_package.data_model,
-            renderer=NullRenderer(),
-            input_backend=NullInputBackend(),
-            realm=RuntimeRealm.SERVER,
-        )
-        client_engine = Engine(
+        return Engine(
             data_model=client_package.data_model,
             renderer=self.renderer.clone_for_runtime(),
             input_backend=self.input_backend.clone_for_runtime(),
             realm=RuntimeRealm.CLIENT,
         )
-
-        server_transport, client_transport = create_local_transport_pair()
-        server_engine.get_provider(NetworkProvider).attach_transport(server_transport)
-        client_engine.get_provider(NetworkProvider).attach_transport(client_transport)
-        client_engine.integrated_server = server_engine
-        return client_engine
