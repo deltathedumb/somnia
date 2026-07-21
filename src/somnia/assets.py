@@ -133,8 +133,11 @@ class AssetDatabase:
         existing = {asset.source_path: asset for asset in self.provider.asset_records()}
         seen = set()
 
-        for path in self.discover():
-            relative_path = normalize_asset_path(path.relative_to(self.source_root).as_posix())
+        for discovered_path in self.discover():
+            relative_path = normalize_asset_path(
+                discovered_path.relative_to(self.source_root).as_posix()
+            )
+            path = self.source_path(relative_path)
             seen.add(relative_path)
             asset_id = asset_id_for_path(relative_path)
             content_hash = hash_file(path)
@@ -143,9 +146,11 @@ class AssetDatabase:
             asset = existing.get(relative_path)
 
             if asset is None:
-                asset = Asset(object_id="asset:" + asset_id, name=path.name)
+                asset = Asset(
+                    object_id="asset:" + asset_id,
+                    name=Path(relative_path).name,
+                )
                 self.provider.add_child(asset)
-                changed = True
                 result.added.append(asset_id)
             else:
                 changed = (
