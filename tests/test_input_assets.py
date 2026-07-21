@@ -5,7 +5,6 @@ import unittest
 from pathlib import Path
 
 from somnia import (
-    AssetDatabase,
     AssetKind,
     Engine,
     Game,
@@ -14,9 +13,8 @@ from somnia import (
     InputProvider,
     QueueInputBackend,
     RuntimeRealm,
-    asset_id_for_path,
-    normalize_asset_path,
 )
+from somnia.assets import AssetDatabase, asset_id_for_path, normalize_asset_path
 
 
 class InputFrameTests(unittest.TestCase):
