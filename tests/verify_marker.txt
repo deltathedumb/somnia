@@ -1,1 +1,1 @@
-Somnia provider/export verification with explicit walk() generator return metadata auditing.
+Somnia provider/export verification after method-call iterable element propagation.
