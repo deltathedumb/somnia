@@ -4,13 +4,14 @@ from __future__ import annotations
 
 from somnia.build import ExportType, create_export_plan
 from somnia.model import (
-    DataModel,
     Game,
     NativeLibrary,
+    NetworkProvider,
     RuntimeRealm,
     get_provider,
     install_canonical_providers,
 )
+from somnia.networking import create_local_transport_pair
 from somnia.rendering import NullRenderer
 
 
@@ -18,8 +19,8 @@ class Engine:
     """Coordinate one logical Somnia runtime realm.
 
     A normal Client play/export creates a client Engine plus an invisible
-    integrated server Engine. Both runtimes retain separate DataModels and are
-    intended to communicate through NetworkProvider rather than shared objects.
+    integrated server Engine. Both runtimes retain separate DataModels and
+    communicate through NetworkProvider rather than shared object references.
     """
 
     def __init__(self, data_model=None, renderer=None, realm=RuntimeRealm.PROJECT):
@@ -97,6 +98,9 @@ class Engine:
         for host in reversed(self.script_hosts):
             host.stop()
         self.script_hosts = []
+        network = self.get_provider(NetworkProvider, create=False)
+        if network is not None:
+            network.close()
         self.renderer.shutdown()
         self.initialized = False
         if self.integrated_server is not None:
@@ -114,6 +118,8 @@ class Engine:
 
         The returned value is the client Engine for backward compatibility. Its
         ``integrated_server`` attribute contains the authoritative server Engine.
+        Both NetworkProviders communicate through paired in-memory endpoints that
+        preserve the same packet boundary expected from future remote transports.
         """
         plan = self.create_export_plan(ExportType.CLIENT)
         server_package = plan.package_for(RuntimeRealm.SERVER)
@@ -129,5 +135,9 @@ class Engine:
             renderer=self.renderer.clone_for_runtime(),
             realm=RuntimeRealm.CLIENT,
         )
+
+        server_transport, client_transport = create_local_transport_pair()
+        server_engine.get_provider(NetworkProvider).attach_transport(server_transport)
+        client_engine.get_provider(NetworkProvider).attach_transport(client_transport)
         client_engine.integrated_server = server_engine
         return client_engine
