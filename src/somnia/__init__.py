@@ -5,6 +5,8 @@ from .formats import load_model, save_model
 from .math import Quaternion, Transform, Vec3
 from .model import (
     AnimationProvider,
+    Asset,
+    AssetKind,
     Assets,
     AudioProvider,
     Camera,
@@ -49,6 +51,22 @@ from .model import (
     get_provider,
     register_object_class,
 )
+from .assets import (
+    AssetDatabase,
+    AssetRefreshResult,
+    asset_id_for_path,
+    hash_file,
+    infer_asset_kind,
+    normalize_asset_path,
+)
+from .input import (
+    InputBackend,
+    InputEvent,
+    InputEventType,
+    InputFrame,
+    NullInputBackend,
+    QueueInputBackend,
+)
 from .networking import (
     LocalTransportEndpoint,
     NetworkPacket,
@@ -60,6 +78,10 @@ from .runtime import Engine
 
 __all__ = [
     "AnimationProvider",
+    "Asset",
+    "AssetDatabase",
+    "AssetKind",
+    "AssetRefreshResult",
     "Assets",
     "AudioProvider",
     "Camera",
@@ -72,6 +94,10 @@ __all__ = [
     "Folder",
     "Game",
     "HttpProvider",
+    "InputBackend",
+    "InputEvent",
+    "InputEventType",
+    "InputFrame",
     "InputProvider",
     "Light",
     "LocalTransportEndpoint",
@@ -86,6 +112,7 @@ __all__ = [
     "NavigationProvider",
     "NetworkPacket",
     "NetworkProvider",
+    "NullInputBackend",
     "NullRenderer",
     "ObjectRegistry",
     "PhysicsProvider",
@@ -97,6 +124,7 @@ __all__ = [
     "Provider",
     "PythonScript",
     "Quaternion",
+    "QueueInputBackend",
     "RaylibRenderer",
     "RecordingRaylibBridge",
     "RenderService",
@@ -114,10 +142,14 @@ __all__ = [
     "UnknownModelNode",
     "Vec3",
     "World",
+    "asset_id_for_path",
     "create_export_plan",
     "create_local_transport_pair",
     "get_provider",
+    "hash_file",
+    "infer_asset_kind",
     "load_model",
+    "normalize_asset_path",
     "register_object_class",
     "save_model",
 ]
