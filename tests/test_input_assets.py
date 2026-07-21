@@ -114,7 +114,7 @@ class AssetDatabaseTests(unittest.TestCase):
     def test_refresh_adds_updates_and_removes_stable_asset_records(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             project_root = Path(temporary)
-            asset_root = project_root / "assets"
+            asset_root = project_root / "assets" / "shared"
             (asset_root / "scripts").mkdir(parents=True)
             (asset_root / "textures").mkdir(parents=True)
             script_path = asset_root / "scripts" / "player.py"
@@ -126,10 +126,12 @@ class AssetDatabaseTests(unittest.TestCase):
             database = AssetDatabase.from_data_model(
                 engine.data_model,
                 project_root=project_root,
+                realm="shared",
             )
             first = database.refresh()
             records = database.provider.asset_records()
 
+            self.assertEqual(database.realm_key, "shared")
             self.assertEqual(len(first.added), 2)
             self.assertEqual(
                 [record.source_path for record in records],
@@ -139,9 +141,18 @@ class AssetDatabaseTests(unittest.TestCase):
             texture = database.provider.find_asset("textures/stone.png")
             self.assertEqual(script.kind, AssetKind.SCRIPT)
             self.assertEqual(texture.kind, AssetKind.TEXTURE)
-            self.assertEqual(script.asset_id, asset_id_for_path("scripts/player.py"))
+            self.assertEqual(
+                script.asset_id,
+                asset_id_for_path("scripts/player.py", realm="shared"),
+            )
+            self.assertTrue(script.object_id.startswith("asset:shared:"))
             stable_object_id = script.object_id
             old_hash = script.content_hash
+
+            with self.assertRaises(AttributeError):
+                script.kind = AssetKind.DATA
+            with self.assertRaises(AttributeError):
+                script.source_path = "renamed.py"
 
             script_path.write_text("print('second')\n", encoding="utf-8")
             second = database.refresh()
@@ -155,6 +166,12 @@ class AssetDatabaseTests(unittest.TestCase):
             self.assertEqual(third.removed, [texture.asset_id])
             self.assertIsNone(database.provider.find_asset("textures/stone.png"))
 
+    def test_same_path_has_distinct_realm_asset_ids(self) -> None:
+        self.assertNotEqual(
+            asset_id_for_path("native/core.dll", realm="server"),
+            asset_id_for_path("native/core.dll", realm="client"),
+        )
+
     def test_asset_paths_are_portable_and_cannot_escape_the_root(self) -> None:
         self.assertEqual(normalize_asset_path("./models\\cube.glb"), "models/cube.glb")
         with self.assertRaises(ValueError):
@@ -165,8 +182,8 @@ class AssetDatabaseTests(unittest.TestCase):
     def test_refresh_rejects_symlink_escape(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             project_root = Path(temporary)
-            asset_root = project_root / "assets"
-            asset_root.mkdir()
+            asset_root = project_root / "assets" / "shared"
+            asset_root.mkdir(parents=True)
             outside = project_root / "outside.txt"
             outside.write_text("private", encoding="utf-8")
             link = asset_root / "escape.txt"
@@ -178,6 +195,7 @@ class AssetDatabaseTests(unittest.TestCase):
             database = AssetDatabase.from_data_model(
                 Engine(Game()).data_model,
                 project_root=project_root,
+                realm="shared",
             )
             with self.assertRaises(ValueError):
                 database.refresh()
