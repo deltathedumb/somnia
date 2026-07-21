@@ -1,1 +1,1 @@
-Somnia provider/export verification after method-call iterable element propagation.
+Somnia provider/export verification after direct iterator element binding from method signatures.
