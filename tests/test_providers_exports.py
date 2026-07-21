@@ -104,11 +104,16 @@ class ProviderAndExportTests(unittest.TestCase):
         self.assertEqual(server_assets.root_path, "assets/server")
         self.assertEqual(shared_assets.root_path, "assets/shared")
         self.assertEqual(client_assets.root_path, "assets/client")
-        self.assertEqual(len({
-            server_assets.object_id,
-            shared_assets.object_id,
-            client_assets.object_id,
-        }), 3)
+        self.assertEqual(
+            len(
+                {
+                    server_assets.object_id,
+                    shared_assets.object_id,
+                    client_assets.object_id,
+                }
+            ),
+            3,
+        )
         with self.assertRaises(ValueError):
             engine.get_provider(Assets)
 
@@ -118,7 +123,10 @@ class ProviderAndExportTests(unittest.TestCase):
         visible_names = [obj.name for obj in editor.scene_tree()]
         all_names = [obj.name for obj in editor.scene_tree(show_hidden_providers=True)]
 
-        self.assertEqual(visible_names[:4], ["Game", "Server", "ServerScriptProvider", "ServerStorage"])
+        self.assertEqual(
+            visible_names[:4],
+            ["Game", "Server", "ServerScriptProvider", "ServerStorage"],
+        )
         self.assertIn("Shared", visible_names)
         self.assertIn("Client", visible_names)
         self.assertEqual(visible_names.count("Assets"), 3)
@@ -147,10 +155,26 @@ class ProviderAndExportTests(unittest.TestCase):
         self.assertIs(storage.parent, game.server)
         self.assertIs(game.server.ServerStorage, storage)
 
-    def test_dedicated_client_contains_no_server_package_or_secrets(self) -> None:
+    def test_client_export_contains_shared_and_client_only(self) -> None:
+        engine = Engine(Game())
+        plan = engine.create_export_plan(ExportType.CLIENT)
+        client = plan.package_for("client")
+
+        self.assertIsNone(plan.package_for("server"))
+        self.assertIsNotNone(client)
+        self.assertEqual(client.root_names(), ["Shared", "Client"])
+        self.assertIn("Shared.Scene", client.provider_paths())
+        self.assertIn("Shared.NetworkProvider", client.provider_paths())
+        self.assertIn("Client.InputProvider", client.provider_paths())
+        self.assertNotIn("ServerStorage", client.provider_names())
+        self.assertNotIn("PhysicsProvider", client.provider_names())
+
+    def test_dedicated_client_contains_only_client_root(self) -> None:
         engine = Engine(Game())
         server_storage = engine.get_provider(ServerStorage)
         server_storage.add_child(Folder(name="DatabaseSecrets"))
+        shared_storage = engine.get_provider(SharedStorage)
+        shared_storage.add_child(Folder(name="SharedContent"))
         client_storage = engine.get_provider(ClientStorage)
         client_storage.add_child(Folder(name="ClientEffects"))
 
@@ -158,64 +182,45 @@ class ProviderAndExportTests(unittest.TestCase):
         client = plan.package_for("client")
 
         self.assertIsNone(plan.package_for("server"))
-        self.assertFalse(plan.integrated_server)
-        self.assertEqual(client.root_names(), ["Shared", "Client"])
+        self.assertEqual(client.root_names(), ["Client"])
         self.assertNotIn("ServerStorage", client.provider_names())
-        self.assertNotIn("ServerScriptProvider", client.provider_names())
-        self.assertNotIn("PhysicsProvider", client.provider_names())
+        self.assertNotIn("SharedStorage", client.provider_names())
+        self.assertNotIn("NetworkProvider", client.provider_names())
         self.assertIn("ClientStorage", client.provider_names())
-        self.assertIn("Shared.Assets", client.provider_paths())
+        self.assertNotIn("Shared.Assets", client.provider_paths())
         self.assertIn("Client.Assets", client.provider_paths())
         self.assertIsNone(client.data_model.find_first("DatabaseSecrets"))
+        self.assertIsNone(client.data_model.find_first("SharedContent"))
         self.assertIsNotNone(client.data_model.find_first("ClientEffects"))
 
-    def test_client_export_contains_separate_integrated_server_and_client(self) -> None:
-        engine = Engine(Game())
-        plan = engine.create_export_plan(ExportType.CLIENT)
-        server = plan.package_for("server")
-        client = plan.package_for("client")
+    def test_runtime_preserves_dedicated_client_root_set(self) -> None:
+        authoring = Engine(Game())
+        package = authoring.create_export_plan(
+            ExportType.DEDICATED_CLIENT
+        ).package_for("client")
 
-        self.assertTrue(plan.integrated_server)
-        self.assertIsNotNone(server)
-        self.assertIsNotNone(client)
-        self.assertIsNot(server.data_model, client.data_model)
-        self.assertEqual(server.root_names(), ["Server", "Shared"])
-        self.assertEqual(client.root_names(), ["Shared", "Client"])
-        self.assertIn("ServerScriptProvider", server.provider_names())
-        self.assertNotIn("PlayerUIProvider", server.provider_names())
-        self.assertIn("PlayerUIProvider", client.provider_names())
-        self.assertNotIn("ServerScriptProvider", client.provider_names())
+        runtime = Engine(data_model=package.data_model, realm="client")
 
-    def test_client_play_connects_separate_realms_through_network_provider(self) -> None:
+        self.assertEqual(
+            [root.name for root in runtime.data_model.realm_roots()],
+            ["Client"],
+        )
+        self.assertIsNone(runtime.data_model.get_realm_root("shared", create=False))
+        self.assertIsNone(runtime.get_provider(NetworkProvider, create=False))
+
+    def test_client_play_uses_shared_and_client_roots(self) -> None:
         authoring_engine = Engine(Game())
         client_engine = authoring_engine.clone_for_play()
-        server_engine = client_engine.integrated_server
 
-        client_network = client_engine.get_provider(NetworkProvider)
-        server_network = server_engine.get_provider(NetworkProvider)
+        self.assertEqual(
+            [root.name for root in client_engine.data_model.realm_roots()],
+            ["Shared", "Client"],
+        )
+        self.assertIsNotNone(client_engine.get_provider(Scene))
+        self.assertIsNotNone(client_engine.get_provider(NetworkProvider))
+        self.assertIsNone(client_engine.data_model.get_realm_root("server", create=False))
 
-        self.assertTrue(client_network.connected)
-        self.assertTrue(server_network.connected)
-        self.assertEqual(client_network.transport_backend, "local")
-        self.assertEqual(server_network.transport_backend, "local")
-
-        client_network.send("JoinRequest", {"name": "Mabel"})
-        server_packets = server_network.receive()
-        self.assertEqual(len(server_packets), 1)
-        self.assertEqual(server_packets[0].channel, "JoinRequest")
-        self.assertEqual(server_packets[0].payload, {"name": "Mabel"})
-        self.assertEqual(server_packets[0].sender, "client")
-
-        server_network.send("JoinAccepted", {"player_id": "local"})
-        client_packets = client_network.receive()
-        self.assertEqual(client_packets[0].channel, "JoinAccepted")
-        self.assertEqual(client_packets[0].sender, "server")
-
-        client_engine.shutdown()
-        self.assertFalse(client_network.connected)
-        self.assertFalse(server_network.connected)
-
-    def test_dedicated_server_omits_client_root(self) -> None:
+    def test_dedicated_server_contains_server_and_shared(self) -> None:
         engine = Engine(Game())
         plan = engine.create_export_plan(ExportType.DEDICATED_SERVER)
         server = plan.package_for("server")
@@ -225,8 +230,27 @@ class ProviderAndExportTests(unittest.TestCase):
         self.assertEqual(server.root_names(), ["Server", "Shared"])
         self.assertIn("ServerStorage", server.provider_names())
         self.assertIn("PhysicsProvider", server.provider_names())
+        self.assertIn("SharedStorage", server.provider_names())
         self.assertNotIn("ClientStorage", server.provider_names())
         self.assertNotIn("PlayerUIProvider", server.provider_names())
+
+    def test_export_manifests_match_the_root_contract(self) -> None:
+        engine = Engine(Game())
+
+        self.assertEqual(
+            engine.create_export_plan(ExportType.CLIENT).manifest()["packages"][0]["roots"],
+            ["Shared", "Client"],
+        )
+        self.assertEqual(
+            engine.create_export_plan(ExportType.DEDICATED_CLIENT)
+            .manifest()["packages"][0]["roots"],
+            ["Client"],
+        )
+        self.assertEqual(
+            engine.create_export_plan(ExportType.DEDICATED_SERVER)
+            .manifest()["packages"][0]["roots"],
+            ["Server", "Shared"],
+        )
 
     def test_all_provider_children_are_provider_objects(self) -> None:
         engine = Engine(Game())
