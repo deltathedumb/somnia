@@ -1,7 +1,6 @@
-"""Demonstrate Somnia's provider-based editor/runtime foundation."""
+"""Demonstrate Somnia's realm-root editor/runtime foundation."""
 
 from somnia import (
-    Assets,
     ExportType,
     MeshObject,
     ModelDocument,
@@ -10,8 +9,6 @@ from somnia import (
     PortaPyRuntime,
     Property,
     PythonScript,
-    Scene,
-    ServerScriptProvider,
     register_object_class,
 )
 from somnia.editor import EditorSession
@@ -28,7 +25,8 @@ class Spinner(MeshObject):
 def main():
     engine = Engine()
     editor = EditorSession(engine)
-    scene = engine.get_provider(Scene)
+    game = engine.data_model
+    scene = game.shared.Scene
 
     camera = editor.create_object("somnia.Camera", scene, name="MainCamera")
     camera.transform = Transform(position=Vec3(5.0, 4.0, 5.0))
@@ -38,7 +36,7 @@ def main():
     cube.material = "builtin:pixelated-purple"
     editor.set_property(cube, "speed", 2.5)
 
-    assets = engine.get_provider(Assets)
+    shared_assets = game.shared.Assets
     project_core = NativeLibrary(name="ProjectCore")
     project_core.load_on_start = False
     project_core.windows_path = "native/project_core.dll"
@@ -46,22 +44,27 @@ def main():
     add_values = NativeFunction(name="project_add")
     add_values.arguments = ["int", "int"]
     project_core.add_child(add_values)
-    assets.add_child(project_core)
+    shared_assets.add_child(project_core)
 
-    server_scripts = engine.get_provider(ServerScriptProvider)
+    server_scripts = game.server.ServerScriptProvider
     portapy = PortaPyRuntime(name="PortaPy")
     portapy.load_on_start = False
     startup = PythonScript(name="Startup")
     startup.execution_context = "server"
-    startup.source = 'print("Somnia embedded server Python started")'
+    startup.source = (
+        "server = game.server\n"
+        "physics_provider = server.PhysicsProvider\n"
+        'print("Somnia embedded server Python started", physics_provider)\n'
+    )
     portapy.add_child(startup)
     server_scripts.add_child(portapy)
 
     frame = engine.frame()
-    document = ModelDocument("Foundation", [engine.data_model])
+    document = ModelDocument("Foundation", [game])
     client_manifest = engine.create_export_plan(ExportType.CLIENT).manifest()
 
-    print("Objects:", len(list(engine.data_model.walk(include_self=True))))
+    print("Top-level roots:", [root.name for root in game.realm_roots()])
+    print("Objects:", len(list(game.walk(include_self=True))))
     print("Draw commands:", len(frame.commands))
     print("SEMJ bytes:", len(dumps_semj(document).encode("utf-8")))
     print("SEM bytes:", len(dumps_sem(document)))

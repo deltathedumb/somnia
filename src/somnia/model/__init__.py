@@ -17,9 +17,21 @@ from .core import (
     serialize_value,
 )
 from .document import ModelDocument
-from .provider import Game, Provider, RuntimeRealm
+from .provider import (
+    Client,
+    Game,
+    Provider,
+    RealmKey,
+    RealmRoot,
+    RuntimeRealm,
+    Server,
+    Shared,
+    canonical_realm_root_types,
+    resolve_realm_root_type,
+)
 
 # Import built-in object classes for registration side effects.
+from .assets import Asset, AssetKind
 from .native import NativeFunction, NativeLibrary, NativeLibraryService
 from .scene import Camera, Environment, Light, MeshObject, RenderService, Scene, World
 from .scripting import PortaPyRuntime, PythonScript, ScriptService
@@ -42,6 +54,7 @@ from .providers import (
     SharedStorage,
     TimeProvider,
     canonical_provider_types,
+    canonical_provider_types_for_root,
     get_provider,
     install_canonical_providers,
     resolve_provider_type,
@@ -49,9 +62,12 @@ from .providers import (
 
 __all__ = [
     "AnimationProvider",
+    "Asset",
+    "AssetKind",
     "Assets",
     "AudioProvider",
     "Camera",
+    "Client",
     "ClientStorage",
     "DataModel",
     "Environment",
@@ -80,13 +96,17 @@ __all__ = [
     "Property",
     "Provider",
     "PythonScript",
+    "RealmKey",
+    "RealmRoot",
     "RenderService",
     "RuntimeRealm",
     "Scene",
     "ScriptService",
+    "Server",
     "ServerScriptProvider",
     "ServerStorage",
     "Service",
+    "Shared",
     "SharedStorage",
     "Signal",
     "SomniaObject",
@@ -95,9 +115,12 @@ __all__ = [
     "UnknownObject",
     "World",
     "canonical_provider_types",
+    "canonical_provider_types_for_root",
+    "canonical_realm_root_types",
     "get_provider",
     "install_canonical_providers",
     "register_object_class",
     "resolve_provider_type",
+    "resolve_realm_root_type",
     "serialize_value",
 ]

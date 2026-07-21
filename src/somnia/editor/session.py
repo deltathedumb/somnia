@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from somnia.model import OBJECT_TYPES, Provider
+from somnia.model import OBJECT_TYPES, Provider, RealmRoot
 
 from .commands import (
     CreateObjectCommand,
@@ -27,6 +27,8 @@ class EditorSession:
         result = []
 
         def append_visible(obj):
+            if obj.type_name.startswith("somnia.editor."):
+                return
             if (
                 isinstance(obj, Provider)
                 and obj.hidden_by_default
@@ -47,12 +49,16 @@ class EditorSession:
         return obj
 
     def delete_object(self, obj):
+        if isinstance(obj, RealmRoot):
+            raise ValueError("Server, Shared, and Client cannot be deleted")
         if isinstance(obj, Provider):
             raise ValueError("canonical providers cannot be deleted from the editor")
         self.history.execute(DeleteObjectCommand(obj))
         self.selection.clear()
 
     def reparent_object(self, obj, new_parent, index=None):
+        if isinstance(obj, RealmRoot):
+            raise ValueError("Server, Shared, and Client cannot be reparented")
         if isinstance(obj, Provider):
             raise ValueError("canonical providers cannot be reparented")
         self.history.execute(ReparentCommand(obj, new_parent, new_index=index))

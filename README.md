@@ -11,7 +11,8 @@ The project borrows the approachable object hierarchy, Properties editing, and i
 - asmpython is the production compiler.
 - Valid Python that fails only under asmpython is fixed in asmpython rather than hidden through awkward Somnia source.
 - The editor and runtime use the same registered object hierarchy.
-- Providers are root-level singleton game systems, equivalent to Roblox services.
+- `Server`, `Shared`, and `Client` are the only top-level game objects.
+- Providers are singleton systems grouped beneath their packaging realm.
 - Objects such as parts should behave sensibly by default; replaceable backends remain implementation details.
 - Rendering is accessed through a replaceable backend boundary; raylib is the first native backend.
 - Physics exposes a small, approachable public interface while permitting custom or replacement backends.
@@ -22,28 +23,42 @@ The project borrows the approachable object hierarchy, Properties editing, and i
 
 ```text
 Game
-├── Scene
-├── Environment
-├── ServerScriptProvider
-├── ServerStorage
-├── SharedStorage
-├── ClientStorage
-├── PlayerProvider
-├── PlayerScriptProvider
-├── PlayerUIProvider
-├── Assets
-├── PhysicsProvider       [hidden]
-├── NetworkProvider       [hidden]
-├── HttpProvider          [hidden]
-├── AnimationProvider     [hidden]
-├── AudioProvider         [hidden]
-├── InputProvider         [hidden]
-├── TimeProvider          [hidden]
-├── NavigationProvider    [hidden]
-└── LocalizationProvider  [hidden]
+├── Server
+│   ├── PhysicsProvider       [hidden]
+│   ├── ServerScriptProvider
+│   ├── ServerStorage
+│   ├── NavigationProvider    [hidden]
+│   └── Assets
+├── Shared
+│   ├── Scene
+│   ├── SharedStorage
+│   ├── PlayerProvider
+│   ├── NetworkProvider       [hidden]
+│   ├── HttpProvider          [hidden]
+│   ├── AnimationProvider     [hidden]
+│   ├── TimeProvider          [hidden]
+│   └── Assets
+└── Client
+    ├── Environment
+    ├── ClientStorage
+    ├── PlayerScriptProvider
+    ├── PlayerUIProvider
+    ├── AudioProvider         [hidden]
+    ├── InputProvider         [hidden]
+    ├── LocalizationProvider  [hidden]
+    └── Assets
 ```
 
 Hidden providers are still ordinary accessible objects; they are only omitted from the default Explorer view.
+
+Gameplay scripts access providers through the hierarchy:
+
+```python
+server = game.server
+physics_provider = server.PhysicsProvider
+scene = game.shared.Scene
+input_provider = game.client.InputProvider
+```
 
 ## Export types
 
@@ -51,16 +66,24 @@ Hidden providers are still ordinary accessible objects; they are only omitted fr
 - **DedicatedServer** — authoritative headless server only.
 - **DedicatedClient** — client only, with no bundled server code; intended for games using proprietary or separately hosted servers.
 
-Exporting clones the authored `Game` into physically separate server and client DataModels. A `DedicatedClient` does not contain `ServerStorage`, `ServerScriptProvider`, or their descendants.
+Exporting clones complete roots into physically separate Games:
+
+- Server runtime: `Server + Shared`
+- Client runtime: `Shared + Client`
+
+A `DedicatedClient` never contains the `Server` root or any descendants.
 
 ## Current status
 
 The repository currently contains:
 
 - One registered object model for editor, runtime, providers, serialization, and custom classes
-- The complete canonical provider set and hidden-provider Explorer filtering
-- Client/server realm metadata and export partitioning
-- Independent integrated-server and client play DataModels
+- Fixed Server/Shared/Client roots and the complete canonical provider set
+- Hierarchical script access through `game.server`, `game.shared`, and `game.client`
+- Root-based client/server export partitioning
+- Independent integrated-server and client play Games
+- Three realm-specific immutable asset databases
+- Deterministic backend-neutral input frames
 - Custom object classes with reflected Properties support
 - First-class DLL/SO declarations and PortaPy runtime objects
 - `.semj` JSON and `.sem` binary serialization

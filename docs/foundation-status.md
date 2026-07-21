@@ -8,10 +8,22 @@
 - Unknown object preservation
 - Editor selection and undo/redo services
 - Play-mode cloning from the editor DataModel
+- Fixed `Server`, `Shared`, and `Client` realm roots as the only top-level `Game` objects
+- Canonical providers grouped beneath their packaging realm
+- Hierarchical scripting access such as `game.server.PhysicsProvider`
+- Automatic migration of legacy flat top-level providers into canonical roots
+- Client, DedicatedServer, and DedicatedClient export plans based on complete root cloning
+- Separate integrated client/server DataModels with local packet transport
 - World, camera, mesh, light, and render service objects
 - Backend-neutral rendering contract and null renderer
 - Raylib renderer backed by a flat Somnia-owned C bridge ABI
 - Window, camera, grid, solid-cube, and wireframe-cube rendering
+- Deterministic backend-neutral input frames
+- Null and queued input backends for headless runs, tests, editor injection, and replays
+- InputProvider state snapshots and transition signals
+- Separate Server, Shared, and Client Assets providers
+- Externally immutable serialized Asset records
+- Deterministic realm-qualified asset IDs, discovery, hashing, kind inference, stale-record removal, and symlink-aware root containment
 - NativeLibrary and NativeFunction objects
 - Static asmpython binding generation from native declarations
 - Generated typed raylib bridge adapter for asmpython
@@ -23,40 +35,40 @@
 - Standard `src/somnia` package layout
 - Strictly built HTML documentation
 - GitHub Wiki generated from the canonical `docs/` sources
+- Pull-request workflow concurrency that cancels superseded CI and documentation runs
 
 ## Verification status
 
-The current CPython reference suite passes, including:
+The CPython reference suite covers:
 
 - editable installation from the `src/` layout,
 - source compilation checks,
 - unit tests,
 - the foundation example,
 - the deterministic scene/render snapshot,
-- generated raylib adapter tests.
+- generated raylib adapter tests,
+- fixed realm-root hierarchy and script access,
+- root-based provider/export partitioning and local transport,
+- legacy flat-provider migration,
+- deterministic input state and signals,
+- realm-specific immutable asset add/update/remove behavior and path containment.
 
-The deterministic foundation snapshot also compiles and produces matching output under asmpython. The receiver-rule audit and whole-program import-graph audit pass in CI.
+The strict MkDocs HTML build and Wiki synchronization use the same canonical documentation source set.
 
-The strict MkDocs HTML build also passes, and the same documentation source set is synchronized to the GitHub Wiki.
+### Current asmpython compatibility work
 
-### asmpython package-root workaround
+Somnia keeps its public package at `src/somnia` and places temporary compiler entries directly inside `src/` during differential runs. This works around asmpython's current package-root discovery limitation without changing Somnia's public API.
 
-asmpython currently discovers user packages relative to the compiled entry file. Somnia therefore keeps its public package at `src/somnia` and places a temporary compiler entry directly inside `src/` during differential runs. This makes `import somnia` resolve as ordinary project source without changing Somnia's public API.
-
-This removes the former rejection:
-
-```text
-asmpython: undefined symbol 'DataModel' has no known .so
-```
-
-The workaround is isolated to `tools/dualrun.py` and CI diagnostics. CPython runs the original source file unchanged. The broader compiler limitation for entry files outside their source root remains an asmpython issue, but it no longer blocks Somnia development.
+The expanded provider/export snapshot remains a native diagnostic target. The latest verified input-independent baseline passes whole-program import analysis and compiles successfully, but the generated executable segfaults inside asmpython's generated dictionary runtime before producing the reference snapshot. Somnia CI preserves the unchanged CPython output and uploads compiler audits, native diagnostics, and the failing executable trace. Optional input replay/serialization and filesystem asset tooling are kept outside the core import graph so they do not widen this known compiler-runtime gap.
 
 ## Deliberately not implemented yet
 
 - PortaPy's concrete generated ABI adapter
 - Physics simulation
 - Visual editor UI
-- Asset database
+- Native raylib input adapter
+- Asset importer execution and dependency graphs
+- Derived-asset cache and runtime asset loading
 - RBXM/RBXMX importer
 - Optimized packed SEM records
 - Luau scripting
@@ -65,5 +77,5 @@ The workaround is isolated to `tools/dualrun.py` and CI diagnostics. CPython run
 
 1. Build the native raylib bridge automatically in CI.
 2. Compile the generated raylib adapter with asmpython as a focused compatibility target.
-3. Add a deterministic input/event frame contract beside the render-frame contract.
-4. Begin the asset database required by meshes, textures, scripts, and editor browsing.
+3. Connect raylib keyboard, mouse, and gamepad collection to the new InputBackend contract.
+4. Add importer registration, dependency tracking, and content-addressed derived artifacts to the asset database.

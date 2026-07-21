@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from somnia.build import ExportType, create_export_plan
+from somnia.input_core import InputFrame, NullInputBackend
 from somnia.model import (
     Game,
+    InputProvider,
     NativeLibrary,
     NetworkProvider,
     RuntimeRealm,
@@ -23,7 +25,13 @@ class Engine:
     communicate through NetworkProvider rather than shared object references.
     """
 
-    def __init__(self, data_model=None, renderer=None, realm=RuntimeRealm.PROJECT):
+    def __init__(
+        self,
+        data_model=None,
+        renderer=None,
+        realm=RuntimeRealm.PROJECT,
+        input_backend=None,
+    ):
         normalized_realm = RuntimeRealm.normalize(realm)
         if data_model is None:
             data_model = Game(realm=normalized_realm)
@@ -32,6 +40,8 @@ class Engine:
         if isinstance(self.data_model, Game):
             self.data_model.realm = normalized_realm
         self.renderer = renderer or NullRenderer()
+        self.input_backend = input_backend or NullInputBackend()
+        self.input_frame = InputFrame.empty()
         self.initialized = False
         self.script_hosts = []
         self.frame_number = 0
@@ -43,11 +53,12 @@ class Engine:
         install_canonical_providers(self.data_model, realm=self.realm)
         return self.data_model
 
-    def get_provider(self, provider_type_or_name, create=True):
+    def get_provider(self, provider_type_or_name, create=True, realm=None):
         return get_provider(
             self.data_model,
             provider_type_or_name,
             create=create,
+            realm=realm,
         )
 
     def initialize(self, native_loader=None):
@@ -56,11 +67,14 @@ class Engine:
         for obj in self.data_model.walk(include_self=True):
             if isinstance(obj, NativeLibrary) and obj.enabled and obj.load_on_start:
                 obj.load_reference(loader=native_loader)
+        self.input_backend.initialize(self.data_model)
         self.renderer.initialize(self.data_model)
         self.initialized = True
         return self
 
     def attach_script_host(self, host):
+        if hasattr(host, "bind_game"):
+            host.bind_game(self.data_model)
         if host not in self.script_hosts:
             self.script_hosts.append(host)
         return host
@@ -72,9 +86,23 @@ class Engine:
             results.extend(host.run_auto_scripts(context=active_context))
         return results
 
+    def poll_input(self):
+        next_frame_number = self.frame_number + 1
+        frame = self.input_backend.poll(next_frame_number)
+        if not isinstance(frame, InputFrame):
+            raise TypeError("input backends must return somnia.InputFrame objects")
+        if frame.frame_number != next_frame_number:
+            raise ValueError("input backend returned an unexpected frame number")
+        self.input_frame = frame
+        provider = self.get_provider(InputProvider, create=False)
+        if provider is not None:
+            provider.apply_frame(frame, backend_name=self.input_backend.backend_name)
+        return frame
+
     def frame(self):
         if not self.initialized:
             self.initialize()
+        self.poll_input()
         render_frame = self.renderer.build_frame(self.data_model)
         self.renderer.present(render_frame)
         self.delta_time = self.renderer.frame_time()
@@ -101,6 +129,7 @@ class Engine:
         network = self.get_provider(NetworkProvider, create=False)
         if network is not None:
             network.close()
+        self.input_backend.shutdown()
         self.renderer.shutdown()
         self.initialized = False
         if self.integrated_server is not None:
@@ -128,11 +157,13 @@ class Engine:
         server_engine = Engine(
             data_model=server_package.data_model,
             renderer=NullRenderer(),
+            input_backend=NullInputBackend(),
             realm=RuntimeRealm.SERVER,
         )
         client_engine = Engine(
             data_model=client_package.data_model,
             renderer=self.renderer.clone_for_runtime(),
+            input_backend=self.input_backend.clone_for_runtime(),
             realm=RuntimeRealm.CLIENT,
         )
 

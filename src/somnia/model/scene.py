@@ -5,7 +5,7 @@ from __future__ import annotations
 from somnia.math import Vec3
 
 from .core import ModelNode, Property, Service, register_object_class
-from .provider import Provider, RuntimeRealm
+from .provider import Provider, RealmKey, RuntimeRealm
 
 
 @register_object_class("somnia.Scene")
@@ -15,6 +15,8 @@ class Scene(Provider):
     provider_key = "Scene"
     fixed_name = "Scene"
     runtime_realms = (RuntimeRealm.SERVER, RuntimeRealm.CLIENT)
+    root_keys = (RealmKey.SHARED,)
+    default_root_key = RealmKey.SHARED
 
     active_camera_id = Property("", value_type=str, category="Scene")
 
@@ -25,11 +27,13 @@ World = Scene
 
 @register_object_class("somnia.Environment")
 class Environment(Provider):
-    """Lighting-equivalent provider for global visual environment state."""
+    """Lighting-equivalent provider for client visual environment state."""
 
     provider_key = "Environment"
     fixed_name = "Environment"
-    runtime_realms = (RuntimeRealm.SERVER, RuntimeRealm.CLIENT)
+    runtime_realms = (RuntimeRealm.CLIENT,)
+    root_keys = (RealmKey.CLIENT,)
+    default_root_key = RealmKey.CLIENT
 
     clear_color = Property(Vec3(0.05, 0.05, 0.08), value_type=Vec3, category="Environment")
     ambient_color = Property(Vec3(0.2, 0.2, 0.2), value_type=Vec3, category="Environment")
@@ -73,8 +77,8 @@ class MeshObject(ModelNode):
     )
     visible = Property(True, value_type=bool, category="Rendering")
     wireframe = Property(False, value_type=bool, category="Rendering")
-    cast_shadows = Property(True, value_type=bool, category="Rendering")
-    receive_shadows = Property(True, value_type=bool, category="Rendering")
+    cast_shadows = Property(True, value_type=bool, category="Lighting")
+    receive_shadows = Property(True, value_type=bool, category="Lighting")
 
     def __init__(self, object_id=None, name=None):
         super().__init__(object_id=object_id, name=name or "MeshObject")
