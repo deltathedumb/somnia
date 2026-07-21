@@ -51,7 +51,8 @@ The `Assets` provider owns serializable `Asset` objects. Each record includes a 
 `AssetDatabase` synchronizes those records with the project's configured asset directory:
 
 ```python
-from somnia import AssetDatabase, Engine, Game
+from somnia import Engine, Game
+from somnia.assets import AssetDatabase
 
 engine = Engine(Game())
 database = AssetDatabase.from_data_model(engine.data_model, project_root=".")
