@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from somnia.build import ExportType, create_export_plan
-from somnia.input import InputFrame, NullInputBackend
+from somnia.input_core import InputFrame, NullInputBackend
 from somnia.model import (
     Game,
     InputProvider,
