@@ -1,1 +1,1 @@
-Somnia provider/export verification after native issubclass lowering.
+Somnia provider/export verification after inherited classmethod owner resolution.
