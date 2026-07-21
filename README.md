@@ -62,16 +62,11 @@ input_provider = game.client.InputProvider
 
 ## Export types
 
-- **Client** — client runtime plus a separate invisible integrated server runtime. This is the ordinary standalone/single-player export.
-- **DedicatedServer** — authoritative headless server only.
-- **DedicatedClient** — client only, with no bundled server code; intended for games using proprietary or separately hosted servers.
+- **Client** — `Shared + Client`
+- **DedicatedClient** — `Client`
+- **DedicatedServer** — `Server + Shared`
 
-Exporting clones complete roots into physically separate Games:
-
-- Server runtime: `Server + Shared`
-- Client runtime: `Shared + Client`
-
-A `DedicatedClient` never contains the `Server` root or any descendants.
+Each export produces exactly one runtime package and preserves its selected root set during initialization. `Client` does not embed an integrated server, and `DedicatedClient` does not contain `Shared`.
 
 ## Current status
 
@@ -80,8 +75,7 @@ The repository currently contains:
 - One registered object model for editor, runtime, providers, serialization, and custom classes
 - Fixed Server/Shared/Client roots and the complete canonical provider set
 - Hierarchical script access through `game.server`, `game.shared`, and `game.client`
-- Root-based client/server export partitioning
-- Independent integrated-server and client play Games
+- Exact root-based Client, DedicatedClient, and DedicatedServer exports
 - Three realm-specific immutable asset databases
 - Deterministic backend-neutral input frames
 - Custom object classes with reflected Properties support
