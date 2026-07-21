@@ -110,15 +110,31 @@ class PortaPyBackend(EmbeddedPythonBackend):
 class ScriptHost:
     """Runs PythonScript objects through one PortaPyRuntime object."""
 
-    def __init__(self, runtime_object, backend, host_api):
+    def __init__(self, runtime_object, backend, host_api, game=None):
         self.runtime_object = runtime_object
         self.backend = backend
         self.host_api = host_api
+        self.game = game
         self.runtime_handle = None
 
     @property
     def started(self):
         return self.runtime_handle is not None
+
+    def bind_game(self, game):
+        self.game = game
+        return self
+
+    def resolve_game(self):
+        if self.game is not None:
+            return self.game
+        node = self.runtime_object
+        while node is not None:
+            if getattr(node, "type_name", "") == "somnia.Game":
+                self.game = node
+                return node
+            node = node.parent
+        return None
 
     def start(self):
         if self.started:
@@ -141,12 +157,16 @@ class ScriptHost:
                 )
             with open(script.source_path, "r", encoding="utf-8") as source_file:
                 source = source_file.read()
+        script_globals = dict(extra_globals or {})
+        game = self.resolve_game()
+        if game is not None:
+            script_globals["game"] = game
         try:
             return self.backend.execute(
                 self.runtime_handle,
                 source,
                 filename,
-                globals_dict=extra_globals,
+                globals_dict=script_globals,
             )
         except ScriptExecutionError:
             raise
