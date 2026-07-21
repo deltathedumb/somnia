@@ -41,7 +41,7 @@ class ObjectModelTests(unittest.TestCase):
         editor.history.redo()
         self.assertEqual(door.open_speed, 4.5)
 
-    def test_editor_play_creates_separate_client_and_server_models(self) -> None:
+    def test_editor_play_creates_client_model_from_shared_and_client(self) -> None:
         engine = Engine(Game(object_id="data", name="Game"))
         editor = EditorSession(engine)
         scene = engine.get_provider(Scene)
@@ -51,15 +51,15 @@ class ObjectModelTests(unittest.TestCase):
         play_client = editor.play()
         client_scene = play_client.get_provider(Scene)
         client_door = client_scene.find_first("Door")
-        server_scene = play_client.integrated_server.get_provider(Scene)
-        server_door = server_scene.find_first("Door")
 
         self.assertIsInstance(client_door, Door)
-        self.assertIsInstance(server_door, Door)
         self.assertTrue(client_door.locked)
-        self.assertTrue(server_door.locked)
-        self.assertIsNot(client_door, server_door)
+        self.assertIsNot(client_door, door)
         self.assertEqual(client_door.extensions["source_object_id"], door.object_id)
+        self.assertEqual(
+            [root.name for root in play_client.data_model.realm_roots()],
+            ["Shared", "Client"],
+        )
         self.assertIsNone(
             play_client.data_model.find_first("Editor", recursive=False)
         )
