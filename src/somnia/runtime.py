@@ -53,11 +53,12 @@ class Engine:
         install_canonical_providers(self.data_model, realm=self.realm)
         return self.data_model
 
-    def get_provider(self, provider_type_or_name, create=True):
+    def get_provider(self, provider_type_or_name, create=True, realm=None):
         return get_provider(
             self.data_model,
             provider_type_or_name,
             create=create,
+            realm=realm,
         )
 
     def initialize(self, native_loader=None):
@@ -72,6 +73,8 @@ class Engine:
         return self
 
     def attach_script_host(self, host):
+        if hasattr(host, "bind_game"):
+            host.bind_game(self.data_model)
         if host not in self.script_hosts:
             self.script_hosts.append(host)
         return host
