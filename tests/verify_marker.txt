@@ -1,1 +1,1 @@
-Somnia foundation verification marker.
+Somnia provider/export verification after preserved classmethod receiver metadata.

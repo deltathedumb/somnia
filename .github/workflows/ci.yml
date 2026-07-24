@@ -58,7 +58,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install native toolchain
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq nasm
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq nasm gdb
       - name: Check out asmpython beta/3.14.0
         run: git clone --depth 1 --branch beta/3.14.0 https://github.com/deltathedumb/asmpython.git ../asmpython
       - name: Audit receiver semantic rule
@@ -89,6 +89,16 @@ jobs:
             src/_somnia_type_audit.py \
             > asmpython-type-audit.txt 2>&1
           rm -f src/_somnia_type_audit.py
+      - name: Audit classmethod lowering metadata
+        continue-on-error: true
+        env:
+          PYTHONPATH: ${{ github.workspace }}/../asmpython:${{ github.workspace }}/src:${{ github.workspace }}
+        run: |
+          cp tests/parity/model_snapshot.py src/_somnia_classmethod_audit.py
+          python -m asmpython._compiler.classmethod_lowering_audit \
+            src/_somnia_classmethod_audit.py \
+            > asmpython-classmethod-audit.txt 2>&1
+          rm -f src/_somnia_classmethod_audit.py
       - name: Audit post-sema indexed assignments
         continue-on-error: true
         env:
@@ -105,6 +115,7 @@ jobs:
           cat asmpython-receiver-audit.txt
           cat asmpython-import-audit.txt
           cat asmpython-type-audit.txt
+          cat asmpython-classmethod-audit.txt
           cat asmpython-index-audit.txt
       - name: Run CPython/asmpython differential probe
         id: parity
@@ -126,6 +137,7 @@ jobs:
             asmpython-receiver-audit.txt
             asmpython-import-audit.txt
             asmpython-type-audit.txt
+            asmpython-classmethod-audit.txt
             asmpython-index-audit.txt
             asmpython-parity.txt
           if-no-files-found: error

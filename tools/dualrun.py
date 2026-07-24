@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -37,6 +38,52 @@ def show_process(label, result):
     if result.stderr:
         print(label + " stderr:")
         print(result.stderr.rstrip())
+
+
+def show_native_backtrace(executable, *, cwd, env):
+    debugger = shutil.which("gdb")
+    if debugger is None:
+        print("native debugger: gdb is unavailable")
+        return
+    traced = run(
+        [
+            debugger,
+            "--batch",
+            "-ex",
+            "set pagination off",
+            "-ex",
+            "set disassembly-flavor intel",
+            "-ex",
+            "run",
+            "-ex",
+            "thread apply all bt full",
+            "-ex",
+            "info registers",
+            "-ex",
+            "info proc mappings",
+            "-ex",
+            "x/48i $pc-64",
+            "-ex",
+            "x/24gx $rsp",
+            "--args",
+            str(executable),
+        ],
+        cwd=cwd,
+        env=env,
+    )
+    show_process("native gdb", traced)
+
+    for tool, arguments in (
+        ("readelf", ["-h", "-S", "-l", str(executable)]),
+        ("nm", ["-n", str(executable)]),
+    ):
+        program = shutil.which(tool)
+        if program is None:
+            continue
+        show_process(
+            "native " + tool,
+            run([program, *arguments], cwd=cwd, env=env),
+        )
 
 
 def make_compiler_entry(script, source_root):
@@ -121,15 +168,14 @@ def main(argv=None):
                 print("Compilation succeeded, but the native executable failed.")
                 show_process("CPython", reference)
                 show_process("native", native)
+                show_native_backtrace(executable, cwd=repo_root, env=env)
                 return 3
-
             if reference.stdout != native.stdout:
                 print("ASMPYTHON OBSERVABLE MISCOMPILE")
                 print("Both executions completed but produced different stdout.")
                 show_process("CPython", reference)
                 show_process("native", native)
                 return 4
-
             print("PARITY PASS")
             print(reference.stdout.rstrip())
             return 0
