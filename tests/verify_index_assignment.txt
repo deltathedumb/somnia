@@ -1,0 +1,1 @@
+Run the unchanged Somnia snapshot and dump every post-sema indexed-assignment type before native lowering.
